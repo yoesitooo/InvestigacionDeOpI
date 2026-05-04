@@ -449,11 +449,11 @@ function App() {
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-12">
-                      <div className="glass p-10 rounded-[2.5rem] border-white/5 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                          <CheckCircle2 className="w-32 h-32 text-accent" />
+                      <div className="glass p-6 md:p-10 rounded-[2.5rem] border-white/5 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                          <CheckCircle2 className="w-48 h-48 text-accent" />
                         </div>
-                        <h3 className="text-3xl font-black mb-10 flex items-center gap-3">
+                        <h3 className="text-2xl md:text-3xl font-black mb-8 flex items-center gap-3">
                           <CheckCircle2 className="w-8 h-8 text-accent" />
                           Solución Óptima
                         </h3>
