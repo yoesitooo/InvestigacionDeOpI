@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { SimplexSolver, MValue } from './logic/simplex';
+import React, { useState, useEffect } from 'react';
+import { SimplexSolver } from './logic/simplex';
 import { 
   Plus, 
   Minus, 
@@ -14,12 +14,16 @@ import {
   LayoutDashboard,
   Target,
   Layers,
-  ArrowRight
+  ArrowRight,
+  BookOpen,
+  FileText,
+  Lightbulb,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
-  const [step, setStep] = useState(1); 
+  const [step, setStep] = useState(0); // 0: Landing/Enunciado, 1: Config, 2: Input, 3: Result
   const [varCount, setVarCount] = useState(2);
   const [constCount, setConstCount] = useState(2);
   const [type, setType] = useState('min');
@@ -33,13 +37,26 @@ function App() {
   const [solution, setSolution] = useState(null);
 
   const handleConfigSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setObjective(new Array(varCount).fill(0));
     setConstraints(new Array(constCount).fill(0).map(() => ({
       coeffs: new Array(varCount).fill(0),
       op: '<=',
       constant: 0
     })));
+    setStep(2);
+  };
+
+  const loadRealCase = () => {
+    setVarCount(2);
+    setConstCount(3);
+    setType('max');
+    setObjective([50, 40]); // Profit per unit
+    setConstraints([
+      { coeffs: [2, 1], op: '<=', constant: 100 }, // Labor hours
+      { coeffs: [1, 1], op: '<=', constant: 80 },  // Raw material
+      { coeffs: [1, 3], op: '<=', constant: 150 }  // Machine time
+    ]);
     setStep(2);
   };
 
@@ -69,33 +86,120 @@ function App() {
 
       <nav className="relative z-10 border-b border-white/10 bg-dark-bg/50 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setStep(0)}>
             <div className="p-2 bg-primary/20 rounded-lg">
               <BrainCircuit className="w-6 h-6 text-primary" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Simplex<span className="text-primary">Optimizer</span> <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2">BIG M</span></span>
+            <span className="text-xl font-bold tracking-tight">Simplex<span className="text-primary">Optimizer</span></span>
           </div>
-          <div className="flex items-center gap-4 text-sm text-slate-400">
-            <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary' : ''}`}>
-              <span className="w-5 h-5 flex items-center justify-center rounded-full border border-current text-[10px]">1</span>
-              <span>Estructura</span>
-            </div>
-            <ChevronRight className="w-4 h-4 opacity-30" />
-            <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary' : ''}`}>
-              <span className="w-5 h-5 flex items-center justify-center rounded-full border border-current text-[10px]">2</span>
-              <span>Modelado</span>
-            </div>
-            <ChevronRight className="w-4 h-4 opacity-30" />
-            <div className={`flex items-center gap-2 ${step >= 3 ? 'text-primary' : ''}`}>
-              <span className="w-5 h-5 flex items-center justify-center rounded-full border border-current text-[10px]">3</span>
-              <span>Solución</span>
-            </div>
+          <div className="flex items-center gap-6 text-sm">
+            <button onClick={() => setStep(0)} className={`hover:text-primary transition-colors ${step === 0 ? 'text-primary font-bold' : 'text-slate-400'}`}>Inicio</button>
+            <button onClick={() => setStep(1)} className={`px-4 py-2 rounded-xl border transition-all ${step > 0 ? 'bg-primary border-primary text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>
+              Resolver Problema
+            </button>
           </div>
         </div>
       </nav>
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 py-12">
         <AnimatePresence mode="wait">
+          {step === 0 && (
+            <motion.div
+              key="landing"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-16"
+            >
+              <div className="text-center space-y-6 max-w-3xl mx-auto">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-[0.2em] mb-4">
+                  <Zap className="w-3 h-3" /> Proyecto Académico
+                </div>
+                <h1 className="text-6xl font-black bg-gradient-to-r from-white via-white to-slate-500 bg-clip-text text-transparent leading-tight">
+                  Investigación de Operaciones I
+                </h1>
+                <p className="text-xl text-slate-400 font-medium">
+                  Sistema interactivo de optimización lineal desarrollado para la resolución de problemas reales mediante el método Simplex (Gran M).
+                </p>
+                <div className="flex items-center justify-center gap-4 pt-8">
+                  <button 
+                    onClick={() => setStep(1)}
+                    className="px-8 py-4 bg-primary rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 flex items-center gap-2 group hover:scale-105 transition-all"
+                  >
+                    Empezar a Resolver <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <button 
+                    onClick={loadRealCase}
+                    className="px-8 py-4 bg-white/5 rounded-2xl border border-white/10 font-bold text-lg hover:bg-white/10 transition-all"
+                  >
+                    Ver Caso Real
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12">
+                <div className="glass p-8 rounded-[2.5rem] space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold">Enunciado</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Diseñar e implementar un sistema interactivo que modele y resuelva un problema real de optimización, permitiendo la visualización de resultados y análisis de sensibilidad.
+                  </p>
+                </div>
+                <div className="glass p-8 rounded-[2.5rem] space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-accent" />
+                  </div>
+                  <h3 className="text-xl font-bold">Metodología</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Implementación del método **Simplex de la Gran M**, permitiendo el manejo de restricciones de igualdad y desigualdad mediante variables artificiales simbólicas.
+                  </p>
+                </div>
+                <div className="glass p-8 rounded-[2.5rem] space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
+                    <Lightbulb className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <h3 className="text-xl font-bold">Objetivo</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Maximizar la eficiencia en la toma de decisiones mediante el análisis detallado de tableaus, precios sombra y rangos de optimización.
+                  </p>
+                </div>
+              </div>
+
+              <div className="glass p-12 rounded-[3rem] border-white/5 space-y-8 bg-gradient-to-br from-white/[0.03] to-transparent">
+                <h2 className="text-3xl font-black flex items-center gap-3">
+                  <FileText className="w-8 h-8 text-primary" /> Contexto del Proyecto
+                </h2>
+                <div className="prose prose-invert max-w-none space-y-6 text-slate-300">
+                  <p>
+                    Este software ha sido diseñado como herramienta de apoyo para el curso de **Investigación de Operaciones I**. El objetivo principal es proporcionar una interfaz intuitiva para estudiantes y profesionales que requieran resolver modelos de programación lineal complejos.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                    <div className="space-y-4 p-6 bg-white/5 rounded-2xl">
+                      <h4 className="font-bold text-white uppercase tracking-widest text-xs">Requisitos Cumplidos</h4>
+                      <ul className="space-y-2 list-disc list-inside text-slate-400">
+                        <li>Modelado de problemas reales.</li>
+                        <li>Método Simplex y Gran M.</li>
+                        <li>Análisis de sensibilidad integral.</li>
+                        <li>Visualización paso a paso de tableaus.</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-4 p-6 bg-white/5 rounded-2xl">
+                      <h4 className="font-bold text-white uppercase tracking-widest text-xs">Tecnologías Utilizadas</h4>
+                      <ul className="space-y-2 list-disc list-inside text-slate-400">
+                        <li>React 19 & Vite 8</li>
+                        <li>Tailwind CSS 4 (Styling)</li>
+                        <li>Framer Motion (Animaciones)</li>
+                        <li>Algoritmos de Optimización Propios</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {step === 1 && (
             <motion.div
               key="step1"
@@ -106,9 +210,9 @@ function App() {
             >
               <div className="text-center mb-10">
                 <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-white via-primary to-accent bg-clip-text text-transparent">
-                  Optimizador Lineal
+                  Define tu Problema
                 </h1>
-                <p className="text-slate-400 text-lg">Define las dimensiones de tu problema de programación lineal.</p>
+                <p className="text-slate-400 text-lg">Establece las dimensiones básicas de tu modelo.</p>
               </div>
 
               <div className="glass p-10 rounded-[2.5rem] space-y-10 border-white/5">
@@ -121,7 +225,7 @@ function App() {
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setVarCount(Math.max(1, varCount - 1))}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
                       >
                         <Minus className="w-5 h-5" />
                       </button>
@@ -130,7 +234,7 @@ function App() {
                       </div>
                       <button 
                         onClick={() => setVarCount(varCount + 1)}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -145,7 +249,7 @@ function App() {
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setConstCount(Math.max(1, constCount - 1))}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
                       >
                         <Minus className="w-5 h-5" />
                       </button>
@@ -154,7 +258,7 @@ function App() {
                       </div>
                       <button 
                         onClick={() => setConstCount(constCount + 1)}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -192,7 +296,7 @@ function App() {
 
                 <button
                   onClick={handleConfigSubmit}
-                  className="w-full py-5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3 group active:scale-[0.98]"
+                  className="w-full py-5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3 group"
                 >
                   Continuar al Modelado
                   <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
@@ -222,7 +326,7 @@ function App() {
                 </button>
               </div>
 
-              <div className="glass p-10 rounded-[2.5rem] space-y-16 border-white/5 relative overflow-hidden">
+              <div className="glass p-10 rounded-[2.5rem] space-y-16 border-white/5">
                 {/* Objective Function */}
                 <div className="space-y-8">
                   <div className="flex items-center gap-3">
@@ -235,19 +339,16 @@ function App() {
                     <span className="font-mono text-3xl font-black text-slate-500 uppercase">{type} Z = </span>
                     {objective.map((val, i) => (
                       <div key={i} className="flex items-center gap-4">
-                        <div className="relative group">
-                          <input
-                            type="number"
-                            value={val}
-                            onChange={(e) => {
-                              const newObj = [...objective];
-                              newObj[i] = parseFloat(e.target.value) || 0;
-                              setObjective(newObj);
-                            }}
-                            className="w-32 bg-dark-bg border-2 border-white/10 rounded-2xl px-4 py-4 focus:border-primary outline-none transition-all text-center text-2xl font-bold shadow-lg"
-                          />
-                          <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-dark-bg px-2 text-[10px] font-black text-primary border border-primary/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">COEFF X{i+1}</span>
-                        </div>
+                        <input
+                          type="number"
+                          value={val}
+                          onChange={(e) => {
+                            const newObj = [...objective];
+                            newObj[i] = parseFloat(e.target.value) || 0;
+                            setObjective(newObj);
+                          }}
+                          className="w-32 bg-dark-bg border-2 border-white/10 rounded-2xl px-4 py-4 focus:border-primary outline-none transition-all text-center text-2xl font-bold shadow-lg"
+                        />
                         <span className="text-slate-400 font-mono text-2xl">X<sub className="text-primary">{i + 1}</sub></span>
                         {i < objective.length - 1 && <Plus className="w-6 h-6 text-slate-700" />}
                       </div>
@@ -265,7 +366,7 @@ function App() {
                   </div>
                   <div className="space-y-6">
                     {constraints.map((c, i) => (
-                      <div key={i} className="flex flex-wrap items-center gap-6 p-6 bg-white/5 rounded-[2rem] border border-white/10 hover:bg-white/[0.08] transition-colors relative group">
+                      <div key={i} className="flex flex-wrap items-center gap-6 p-6 bg-white/5 rounded-[2rem] border border-white/10 hover:bg-white/[0.08] transition-colors relative">
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-12 bg-accent/20 rounded-lg flex items-center justify-center text-xs font-black text-accent border border-accent/30 rotate-3">
                           R{i + 1}
                         </div>
@@ -293,7 +394,7 @@ function App() {
                               newConstraints[i].op = e.target.value;
                               setConstraints(newConstraints);
                             }}
-                            className="bg-dark-bg border-2 border-white/10 rounded-xl px-4 py-3 outline-none focus:border-accent cursor-pointer font-black text-2xl text-accent appearance-none hover:border-accent/50 transition-all text-center min-w-[70px]"
+                            className="bg-dark-bg border-2 border-white/10 rounded-xl px-4 py-3 outline-none focus:border-accent cursor-pointer font-black text-2xl text-accent appearance-none text-center min-w-[70px]"
                           >
                             <option value="<=">&le;</option>
                             <option value=">=">&ge;</option>
@@ -317,10 +418,10 @@ function App() {
 
                 <button
                   onClick={handleSolve}
-                  className="w-full py-6 bg-accent hover:opacity-90 text-dark-bg rounded-[2rem] font-black text-2xl transition-all shadow-2xl shadow-accent/20 flex items-center justify-center gap-4 active:scale-[0.99]"
+                  className="w-full py-6 bg-accent hover:opacity-90 text-dark-bg rounded-[2rem] font-black text-2xl transition-all shadow-2xl shadow-accent/20 flex items-center justify-center gap-4"
                 >
                   <Play className="w-8 h-8 fill-current" />
-                  EJECUTAR GRAN M
+                  EJECUTAR SIMPLEX
                 </button>
               </div>
             </motion.div>
@@ -346,7 +447,6 @@ function App() {
                 </div>
               ) : (
                 <>
-                  {/* Results Overview */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-12">
                       <div className="glass p-10 rounded-[2.5rem] border-white/5 relative overflow-hidden">
@@ -375,7 +475,6 @@ function App() {
                         </div>
                       </div>
 
-                      {/* Iterations */}
                       <div className="space-y-10">
                         <div className="flex items-center justify-between px-4">
                           <h3 className="text-2xl font-black flex items-center gap-3">
@@ -396,7 +495,6 @@ function App() {
                               <div className="p-2 overflow-x-auto">
                                 <table className="w-full border-separate border-spacing-1 text-center font-mono text-[13px]">
                                   <thead>
-                                    {/* Cj Row */}
                                     <tr>
                                       <td colSpan={2}></td>
                                       <td className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 font-black text-[10px] uppercase">Cj</td>
@@ -407,7 +505,6 @@ function App() {
                                       ))}
                                       <td></td>
                                     </tr>
-                                    {/* Variable Headers */}
                                     <tr className="text-slate-500">
                                       <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">V<sub>B</sub></th>
                                       <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">C<sub>B</sub></th>
@@ -442,7 +539,6 @@ function App() {
                                     ))}
                                   </tbody>
                                   <tfoot>
-                                    {/* Zj Row */}
                                     <tr className="bg-primary/5 text-primary">
                                       <td colSpan={2}></td>
                                       <td className="p-4 border border-primary/20 rounded-xl font-black uppercase text-[10px]">Zj</td>
@@ -455,7 +551,6 @@ function App() {
                                         {tableau.zj[tableau.zj.length - 1].toString()}
                                       </td>
                                     </tr>
-                                    {/* Cj - Zj Row */}
                                     <tr className="bg-accent/5 text-accent">
                                       <td colSpan={2}></td>
                                       <td className="p-4 border border-accent/20 rounded-xl font-black uppercase text-[10px]">Cj-Zj</td>
@@ -476,13 +571,12 @@ function App() {
                     </div>
 
                     <div className="space-y-8">
-                      {/* Sensitivity Analysis Sidebar */}
                       <div className="glass p-10 rounded-[2.5rem] sticky top-8 border-white/5 shadow-2xl">
                         <div className="flex items-center gap-3 mb-8">
                           <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
                             <Info className="w-6 h-6 text-accent" />
                           </div>
-                          <h4 className="text-xl font-black">Análisis de Sensibilidad</h4>
+                          <h4 className="text-xl font-black">Análisis Final</h4>
                         </div>
                         
                         <div className="space-y-8">
@@ -499,7 +593,7 @@ function App() {
                           </div>
 
                           <div className="pt-6 border-t border-white/10">
-                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Parámetros del Modelo</span>
+                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Parámetros</span>
                             <div className="space-y-4 text-sm text-slate-400">
                               <div className="flex justify-between py-3 border-b border-white/5">
                                 <span className="font-medium">Tipo:</span>
@@ -509,17 +603,13 @@ function App() {
                                 <span className="font-medium">Variables:</span>
                                 <span className="text-white font-bold">{varCount}</span>
                               </div>
-                              <div className="flex justify-between py-3 border-b border-white/5">
-                                <span className="font-medium">Restricciones:</span>
-                                <span className="text-white font-bold">{constCount}</span>
-                              </div>
                             </div>
                           </div>
                         </div>
 
                         <button 
                           onClick={reset}
-                          className="w-full mt-12 py-4 rounded-2xl bg-white/5 border-2 border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-black text-slate-300 hover:text-white active:scale-95"
+                          className="w-full mt-12 py-4 rounded-2xl bg-white/5 border-2 border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-black text-slate-300"
                         >
                           <RefreshCcw className="w-5 h-5" />
                           NUEVO PROBLEMA
@@ -536,9 +626,9 @@ function App() {
 
       <footer className="relative z-10 py-16 border-t border-white/5 mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-6">
-          <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-help">
+          <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
             <BrainCircuit className="w-5 h-5 text-primary" />
-            <span className="font-bold tracking-tight text-sm text-slate-300">SimplexOptimizer v2.0</span>
+            <span className="font-bold tracking-tight text-sm text-slate-300">SimplexOptimizer v2.5</span>
           </div>
           <p className="text-slate-600 text-[10px] uppercase tracking-[0.3em] font-black">
             Investigación de Operaciones I &bull; 2026
