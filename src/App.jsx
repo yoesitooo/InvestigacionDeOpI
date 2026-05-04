@@ -457,17 +457,17 @@ function App() {
                           <CheckCircle2 className="w-8 h-8 text-accent" />
                           Solución Óptima
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
-                          <div className="p-8 bg-accent/10 rounded-[2rem] border border-accent/20 shadow-xl">
-                            <span className="block text-xs font-black text-accent uppercase tracking-widest mb-2 opacity-60">Valor de Z</span>
-                            <span className="text-5xl font-black text-white">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                          <div className="p-6 bg-accent/10 rounded-[2rem] border border-accent/20 shadow-xl overflow-hidden">
+                            <span className="block text-[10px] font-black text-accent uppercase tracking-widest mb-3 opacity-60">Valor de Z</span>
+                            <span className="text-2xl md:text-3xl font-black text-white truncate block">
                               {solution.result.objectiveValue.toFixed(4)}
                             </span>
                           </div>
                           {solution.result.variables.map((val, i) => (
-                            <div key={i} className="p-8 bg-white/5 rounded-[2rem] border border-white/10">
-                              <span className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Variable X{i + 1}</span>
-                              <span className="text-4xl font-bold text-white">
+                            <div key={i} className="p-6 bg-white/5 rounded-[2rem] border border-white/10 overflow-hidden">
+                              <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Variable X{i + 1}</span>
+                              <span className="text-2xl md:text-3xl font-bold text-white truncate block">
                                 {val.toFixed(4)}
                               </span>
                             </div>
