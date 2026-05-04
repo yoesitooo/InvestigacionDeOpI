@@ -1,7 +1,54 @@
 /**
- * Simplex Algorithm Implementation (Two-Phase Method)
+ * Simplex Algorithm Implementation (Big M Method)
  * Handles Maximization, Minimization, and all types of constraints (<=, >=, =)
  */
+
+export class MValue {
+  constructor(real = 0, m = 0) {
+    this.real = real;
+    this.m = m;
+  }
+
+  add(other) {
+    return new MValue(this.real + other.real, this.m + other.m);
+  }
+
+  sub(other) {
+    return new MValue(this.real - other.real, this.m - other.m);
+  }
+
+  mul(scalar) {
+    return new MValue(this.real * scalar, this.m * scalar);
+  }
+
+  div(scalar) {
+    if (Math.abs(scalar) < 1e-10) return new MValue(0, 0);
+    return new MValue(this.real / scalar, this.m / scalar);
+  }
+
+  isLessThan(other) {
+    if (Math.abs(this.m - other.m) > 1e-9) {
+      return this.m < other.m;
+    }
+    return this.real < other.real - 1e-9;
+  }
+
+  isZero() {
+    return Math.abs(this.real) < 1e-9 && Math.abs(this.m) < 1e-9;
+  }
+
+  toString() {
+    if (Math.abs(this.m) < 1e-9) return this.real.toFixed(2);
+    const mStr = Math.abs(this.m) === 1 ? 'M' : `${this.m.toFixed(2)}M`;
+    if (Math.abs(this.real) < 1e-9) return this.m < 0 ? `-${mStr}` : mStr;
+    const sign = this.m < 0 ? '-' : '+';
+    return `${this.real.toFixed(2)} ${sign} ${mStr.replace('-', '')}`;
+  }
+  
+  toValue(mLarge = 1e10) {
+    return this.real + this.m * mLarge;
+  }
+}
 
 export class SimplexSolver {
   constructor(objective, variablesCount, constraints, type = 'max') {
@@ -13,65 +60,31 @@ export class SimplexSolver {
     this.result = null;
     this.error = null;
     this.colNames = [];
+    this.cj = []; // Objective coefficients row
   }
 
   solve() {
     try {
-      // 1. Initialize Phase 1
-      const initData = this.initializePhase1();
-      let { matrix, basis, artificialVars, totalVars } = initData;
+      const { matrix, basis, cj, colNames } = this.initializeBigM();
+      this.cj = cj;
+      this.colNames = colNames;
       
-      this.colNames = this.generateColNames(totalVars);
-      this.captureTableau(matrix, basis, "Estado Inicial (Fase 1)");
+      this.captureTableau(matrix, basis, "Tabla Inicial");
 
-      // Phase 1: Eliminate Artificial Variables
-      if (artificialVars.length > 0) {
-        const phase1Result = this.runSimplex(matrix, basis, true);
-        matrix = phase1Result.matrix;
-        basis = phase1Result.basis;
-
-        // Check if sum of artificial variables is zero
-        const objectiveValue = matrix[matrix.length - 1][matrix[0].length - 1];
-        if (Math.abs(objectiveValue) > 1e-6) {
-          this.error = "El problema es infactible (No se pudieron eliminar las variables artificiales).";
-          return;
-        }
-
-        // Prepare for Phase 2: Remove artificial columns and restore original objective
-        matrix = this.preparePhase2(matrix, basis, artificialVars);
-        totalVars -= artificialVars.length;
-        this.colNames = this.generateColNames(totalVars);
-      } else {
-        // No artificial variables, just prepare Phase 2 directly
-        matrix = this.preparePhase2(matrix, basis, []);
-      }
-
-      this.captureTableau(matrix, basis, "Estado Inicial (Fase 2)");
-
-      // Phase 2: Solve Original Objective
-      const finalResult = this.runSimplex(matrix, basis, false);
+      const finalResult = this.runSimplex(matrix, basis);
       this.result = this.formatResult(finalResult.matrix, finalResult.basis);
+      this.result.sensitivity = this.calculateSensitivity(finalResult.matrix, finalResult.basis);
     } catch (err) {
       if (err.message !== "Unbounded" && err.message !== "Infeasible") {
         console.error(err);
         this.error = "Error durante el cálculo. Revisa tus datos.";
       } else {
-        this.error = err.message === "Unbounded" ? "El problema no tiene fin (No acotado)." : err.message;
+        this.error = err.message === "Unbounded" ? "El problema no tiene fin (No acotado)." : "El problema es infactible.";
       }
     }
   }
 
-  generateColNames(total) {
-    const names = [];
-    for (let i = 0; i < total; i++) {
-      if (i < this.variablesCount) names.push(`X${i + 1}`);
-      else names.push(`S${i - this.variablesCount + 1}`);
-    }
-    names.push("RHS");
-    return names;
-  }
-
-  initializePhase1() {
+  initializeBigM() {
     let slacks = 0;
     let surpluses = 0;
     let artificials = 0;
@@ -83,12 +96,19 @@ export class SimplexSolver {
     });
 
     const totalVars = this.variablesCount + slacks + surpluses + artificials;
-    const rows = this.constraints.length + 1;
+    const rows = this.constraints.length;
     const cols = totalVars + 1;
 
     const matrix = Array.from({ length: rows }, () => Array(cols).fill(0));
     const basis = [];
-    const artificialVars = [];
+    const cj = new Array(totalVars).fill(new MValue(0, 0));
+    const colNames = [];
+
+    // Names and Cj setup
+    for (let j = 0; j < this.variablesCount; j++) {
+      cj[j] = new MValue(this.objective[j], 0);
+      colNames.push(`X${j + 1}`);
+    }
 
     let slackIdx = this.variablesCount;
     let surplusIdx = this.variablesCount + slacks;
@@ -99,79 +119,36 @@ export class SimplexSolver {
       matrix[i][cols - 1] = c.constant;
 
       if (c.op === '<=') {
-        matrix[i][slackIdx++] = 1;
-        basis.push(slackIdx - 1);
+        matrix[i][slackIdx] = 1;
+        cj[slackIdx] = new MValue(0, 0);
+        colNames[slackIdx] = `S${slackIdx - this.variablesCount + 1}`;
+        basis.push(slackIdx);
+        slackIdx++;
       } else if (c.op === '>=') {
-        matrix[i][surplusIdx++] = -1;
-        matrix[i][artificialIdx++] = 1;
-        basis.push(artificialIdx - 1);
-        artificialVars.push(artificialIdx - 1);
+        matrix[i][surplusIdx] = -1;
+        cj[surplusIdx] = new MValue(0, 0);
+        colNames[surplusIdx] = `S${surplusIdx - this.variablesCount + 1}`;
+        
+        matrix[i][artificialIdx] = 1;
+        // M in objective: +M for Min, -M for Max
+        cj[artificialIdx] = new MValue(0, this.type === 'min' ? 1 : -1);
+        colNames[artificialIdx] = `A${artificialIdx - (this.variablesCount + slacks + surpluses) + 1}`;
+        basis.push(artificialIdx);
+        artificialIdx++;
+        surplusIdx++;
       } else if (c.op === '=') {
-        matrix[i][artificialIdx++] = 1;
-        basis.push(artificialIdx - 1);
-        artificialVars.push(artificialIdx - 1);
+        matrix[i][artificialIdx] = 1;
+        cj[artificialIdx] = new MValue(0, this.type === 'min' ? 1 : -1);
+        colNames[artificialIdx] = `A${artificialIdx - (this.variablesCount + slacks + surpluses) + 1}`;
+        basis.push(artificialIdx);
+        artificialIdx++;
       }
     });
 
-    // Objective Phase 1: Minimize sum of A_i
-    artificialVars.forEach(idx => {
-      matrix[rows - 1][idx] = 1;
-    });
-
-    // Make basis canonical for Phase 1 Objective
-    artificialVars.forEach(idx => {
-      const rowIdx = basis.indexOf(idx);
-      const factor = -1;
-      for (let j = 0; j < cols; j++) {
-        matrix[rows - 1][j] += factor * matrix[rowIdx][j];
-      }
-    });
-
-    return { matrix, basis, artificialVars, totalVars };
+    return { matrix, basis, cj, colNames };
   }
 
-  preparePhase2(matrix, basis, artificialVars) {
-    const rows = matrix.length;
-    const oldCols = matrix[0].length;
-    const newCols = oldCols - artificialVars.length;
-    
-    const newMatrix = Array.from({ length: rows }, () => Array(newCols).fill(0));
-    const artSet = new Set(artificialVars);
-    
-    // Copy all rows except objective
-    for (let i = 0; i < rows - 1; i++) {
-      let targetJ = 0;
-      for (let j = 0; j < oldCols; j++) {
-        if (!artSet.has(j)) {
-          newMatrix[i][targetJ++] = matrix[i][j];
-        }
-      }
-    }
-
-    // Prepare New Objective Row
-    const multiplier = this.type === 'max' ? -1 : 1;
-    for (let j = 0; j < this.variablesCount; j++) {
-      newMatrix[rows - 1][j] = this.objective[j] * multiplier;
-    }
-
-    // Adjust Basis indices if artificial variables were before some other variables
-    // In our implementation, artificial variables are at the end, so removing them doesn't shift others.
-    // However, if we remove columns, we must ensure 'basis' indices are still valid for the new columns.
-    // Our surplus variables come before artificials, so they are fine.
-
-    // Make basis canonical for Phase 2 Objective
-    for (let i = 0; i < rows - 1; i++) {
-      const varInBasis = basis[i];
-      const factor = newMatrix[rows - 1][varInBasis];
-      for (let j = 0; j < newCols; j++) {
-        newMatrix[rows - 1][j] -= factor * newMatrix[i][j];
-      }
-    }
-
-    return newMatrix;
-  }
-
-  runSimplex(matrix, basis, isPhase1) {
+  runSimplex(matrix, basis) {
     let currentMatrix = matrix.map(row => [...row]);
     let currentBasis = [...basis];
     const rows = currentMatrix.length;
@@ -181,20 +158,36 @@ export class SimplexSolver {
     const maxIterations = 50;
 
     while (iterations < maxIterations) {
+      const { zj, cj_zj } = this.calculateZj(currentMatrix, currentBasis);
+      
+      // Find pivot column
       let pivotCol = -1;
-      let minVal = -1e-9;
-      for (let j = 0; j < cols - 1; j++) {
-        if (currentMatrix[rows - 1][j] < minVal) {
-          minVal = currentMatrix[rows - 1][j];
-          pivotCol = j;
+      if (this.type === 'max') {
+        // Maximize: find most positive Cj - Zj
+        let maxVal = new MValue(1e-9, 0);
+        for (let j = 0; j < cols - 1; j++) {
+          if (maxVal.isLessThan(cj_zj[j])) {
+            maxVal = cj_zj[j];
+            pivotCol = j;
+          }
+        }
+      } else {
+        // Minimize: find most negative Cj - Zj
+        let minVal = new MValue(-1e-9, 0);
+        for (let j = 0; j < cols - 1; j++) {
+          if (cj_zj[j].isLessThan(minVal)) {
+            minVal = cj_zj[j];
+            pivotCol = j;
+          }
         }
       }
 
       if (pivotCol === -1) break;
 
+      // Find pivot row
       let pivotRow = -1;
       let minRatio = Infinity;
-      for (let i = 0; i < rows - 1; i++) {
+      for (let i = 0; i < rows; i++) {
         if (currentMatrix[i][pivotCol] > 1e-9) {
           const ratio = currentMatrix[i][cols - 1] / currentMatrix[i][pivotCol];
           if (ratio < minRatio) {
@@ -204,18 +197,41 @@ export class SimplexSolver {
         }
       }
 
-      if (pivotRow === -1) {
-        throw new Error("Unbounded");
-      }
+      if (pivotRow === -1) throw new Error("Unbounded");
 
       this.performPivot(currentMatrix, pivotRow, pivotCol);
       currentBasis[pivotRow] = pivotCol;
       
-      this.captureTableau(currentMatrix, currentBasis, `Iteración ${iterations + 1} (${isPhase1 ? 'Fase 1' : 'Fase 2'})`);
       iterations++;
+      this.captureTableau(currentMatrix, currentBasis, `Iteración ${iterations}`);
     }
 
+    // Check for artificial variables in basis with non-zero value
+    const finalTableau = this.calculateZj(currentMatrix, currentBasis);
+    currentBasis.forEach((varIdx, rowIdx) => {
+      if (this.colNames[varIdx].startsWith('A') && Math.abs(currentMatrix[rowIdx][cols - 1]) > 1e-6) {
+        throw new Error("Infeasible");
+      }
+    });
+
     return { matrix: currentMatrix, basis: currentBasis };
+  }
+
+  calculateZj(matrix, basis) {
+    const cols = matrix[0].length;
+    const zj = new Array(cols).fill(new MValue(0, 0));
+    
+    for (let j = 0; j < cols; j++) {
+      let sum = new MValue(0, 0);
+      basis.forEach((varIdx, i) => {
+        const cb = this.cj[varIdx] || new MValue(0, 0);
+        sum = sum.add(cb.mul(matrix[i][j]));
+      });
+      zj[j] = sum;
+    }
+
+    const cj_zj = zj.slice(0, cols - 1).map((val, j) => this.cj[j].sub(val));
+    return { zj, cj_zj };
   }
 
   performPivot(matrix, row, col) {
@@ -238,10 +254,14 @@ export class SimplexSolver {
   }
 
   captureTableau(matrix, basis, title) {
+    const { zj, cj_zj } = this.calculateZj(matrix, basis);
     this.tableaus.push({
       title,
-      data: matrix.map(row => row.map(v => Math.abs(v) < 1e-10 ? 0 : v)),
+      matrix: matrix.map(row => [...row]),
       basis: [...basis],
+      zj: [...zj],
+      cj_zj: [...cj_zj],
+      cj: [...this.cj],
       headers: [...this.colNames]
     });
   }
@@ -257,11 +277,25 @@ export class SimplexSolver {
       }
     });
 
-    const objectiveValue = matrix[rows - 1][cols - 1] * (this.type === 'max' ? 1 : -1);
+    const { zj } = this.calculateZj(matrix, basis);
+    const objectiveValue = zj[cols - 1].real;
 
     return {
       variables: values,
       objectiveValue: objectiveValue
     };
+  }
+
+  calculateSensitivity(matrix, basis) {
+    // Simple Sensitivity: Shadow Prices are the Zj values for slack/surplus columns
+    const { zj } = this.calculateZj(matrix, basis);
+    const shadowPrices = [];
+    this.colNames.forEach((name, j) => {
+      if (name.startsWith('S')) {
+        shadowPrices.push({ name, value: zj[j].real });
+      }
+    });
+
+    return { shadowPrices };
   }
 }

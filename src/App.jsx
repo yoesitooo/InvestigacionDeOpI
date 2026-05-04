@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { SimplexSolver } from './logic/simplex';
+import { SimplexSolver, MValue } from './logic/simplex';
 import { 
   Plus, 
   Minus, 
@@ -7,25 +7,27 @@ import {
   RefreshCcw, 
   Settings2, 
   ChevronRight, 
-  ChevronDown,
   Info,
   CheckCircle2,
   AlertCircle,
   BrainCircuit,
-  LayoutDashboard
+  LayoutDashboard,
+  Target,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
-  const [step, setStep] = useState(1); // 1: Config, 2: Input, 3: Result
+  const [step, setStep] = useState(1); 
   const [varCount, setVarCount] = useState(2);
   const [constCount, setConstCount] = useState(2);
-  const [type, setType] = useState('max');
+  const [type, setType] = useState('min');
   
-  const [objective, setObjective] = useState([0, 0]);
+  const [objective, setObjective] = useState([8, 10]);
   const [constraints, setConstraints] = useState([
-    { coeffs: [0, 0], op: '<=', constant: 0 },
-    { coeffs: [0, 0], op: '<=', constant: 0 }
+    { coeffs: [3, 9], op: '>=', constant: 100 },
+    { coeffs: [8, 4], op: '>=', constant: 150 }
   ]);
 
   const [solution, setSolution] = useState(null);
@@ -58,7 +60,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen text-slate-100 font-sans selection:bg-primary/30">
+    <div className="min-h-screen text-slate-100 font-sans selection:bg-primary/30 bg-[#0f172a]">
       {/* Background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full"></div>
@@ -71,28 +73,28 @@ function App() {
             <div className="p-2 bg-primary/20 rounded-lg">
               <BrainCircuit className="w-6 h-6 text-primary" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Simplex<span className="text-primary">Optimizer</span></span>
+            <span className="text-xl font-bold tracking-tight">Simplex<span className="text-primary">Optimizer</span> <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2">BIG M</span></span>
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-400">
             <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary' : ''}`}>
               <span className="w-5 h-5 flex items-center justify-center rounded-full border border-current text-[10px]">1</span>
-              <span>Configuración</span>
+              <span>Estructura</span>
             </div>
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 opacity-30" />
             <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary' : ''}`}>
               <span className="w-5 h-5 flex items-center justify-center rounded-full border border-current text-[10px]">2</span>
-              <span>Datos</span>
+              <span>Modelado</span>
             </div>
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 opacity-30" />
             <div className={`flex items-center gap-2 ${step >= 3 ? 'text-primary' : ''}`}>
               <span className="w-5 h-5 flex items-center justify-center rounded-full border border-current text-[10px]">3</span>
-              <span>Resultado</span>
+              <span>Solución</span>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-12">
+      <main className="relative z-10 max-w-6xl mx-auto px-4 py-12">
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div
@@ -103,29 +105,32 @@ function App() {
               className="max-w-2xl mx-auto"
             >
               <div className="text-center mb-10">
-                <h1 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                  Define tu Problema
+                <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-white via-primary to-accent bg-clip-text text-transparent">
+                  Optimizador Lineal
                 </h1>
-                <p className="text-slate-400">Establece las dimensiones básicas de tu modelo de optimización lineal.</p>
+                <p className="text-slate-400 text-lg">Define las dimensiones de tu problema de programación lineal.</p>
               </div>
 
-              <div className="glass p-8 rounded-3xl space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="glass p-10 rounded-[2.5rem] space-y-10 border-white/5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   <div className="space-y-4">
-                    <label className="block text-sm font-medium text-slate-300">Variables de Decisión</label>
+                    <div className="flex items-center gap-2 text-slate-300 font-medium">
+                      <Target className="w-4 h-4 text-primary" />
+                      Variables de Decisión
+                    </div>
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setVarCount(Math.max(1, varCount - 1))}
-                        className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Minus className="w-5 h-5" />
                       </button>
-                      <div className="flex-1 text-center text-2xl font-bold bg-white/5 py-2 rounded-xl border border-white/10">
+                      <div className="flex-1 text-center text-3xl font-black bg-white/5 py-3 rounded-2xl border border-white/10 shadow-inner">
                         {varCount}
                       </div>
                       <button 
                         onClick={() => setVarCount(varCount + 1)}
-                        className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -133,20 +138,23 @@ function App() {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="block text-sm font-medium text-slate-300">Restricciones</label>
+                    <div className="flex items-center gap-2 text-slate-300 font-medium">
+                      <Layers className="w-4 h-4 text-accent" />
+                      Restricciones
+                    </div>
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setConstCount(Math.max(1, constCount - 1))}
-                        className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Minus className="w-5 h-5" />
                       </button>
-                      <div className="flex-1 text-center text-2xl font-bold bg-white/5 py-2 rounded-xl border border-white/10">
+                      <div className="flex-1 text-center text-3xl font-black bg-white/5 py-3 rounded-2xl border border-white/10 shadow-inner">
                         {constCount}
                       </div>
                       <button 
                         onClick={() => setConstCount(constCount + 1)}
-                        className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -155,39 +163,39 @@ function App() {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-sm font-medium text-slate-300">Objetivo del Problema</label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <label className="block text-sm font-medium text-slate-400 uppercase tracking-widest text-center mb-4">Objetivo del Problema</label>
+                  <div className="grid grid-cols-2 gap-6">
                     <button
                       onClick={() => setType('max')}
-                      className={`p-4 rounded-2xl border transition-all flex items-center justify-center gap-2 ${
+                      className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3 ${
                         type === 'max' 
-                          ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(139,92,246,0.2)]' 
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                          ? 'bg-primary/20 border-primary text-primary shadow-[0_0_30px_rgba(139,92,246,0.3)]' 
+                          : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'
                       }`}
                     >
-                      <Plus className="w-5 h-5" />
-                      Maximizar
+                      <Plus className="w-8 h-8" />
+                      <span className="font-bold text-lg">Maximizar</span>
                     </button>
                     <button
                       onClick={() => setType('min')}
-                      className={`p-4 rounded-2xl border transition-all flex items-center justify-center gap-2 ${
+                      className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3 ${
                         type === 'min' 
-                          ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(139,92,246,0.2)]' 
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                          ? 'bg-accent/20 border-accent text-accent shadow-[0_0_30px_rgba(16,185,129,0.3)]' 
+                          : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'
                       }`}
                     >
-                      <Minus className="w-5 h-5" />
-                      Minimizar
+                      <Minus className="w-8 h-8" />
+                      <span className="font-bold text-lg">Minimizar</span>
                     </button>
                   </div>
                 </div>
 
                 <button
                   onClick={handleConfigSubmit}
-                  className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-2xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group"
+                  className="w-full py-5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3 group active:scale-[0.98]"
                 >
-                  Continuar
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  Continuar al Modelado
+                  <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
                 </button>
               </div>
             </motion.div>
@@ -199,63 +207,70 @@ function App() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              className="space-y-10"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold">Entrada de Datos</h2>
-                  <p className="text-slate-400">Introduce los coeficientes de tu modelo.</p>
+                  <h2 className="text-4xl font-black mb-2">Modelado Matemático</h2>
+                  <p className="text-slate-400 text-lg italic">Introduce los coeficientes de tu función objetivo y restricciones.</p>
                 </div>
                 <button 
                   onClick={reset}
-                  className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 transition-all"
+                  className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 transition-all hover:text-white"
                 >
-                  <RefreshCcw className="w-5 h-5" />
+                  <RefreshCcw className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className="glass p-8 rounded-3xl space-y-12">
+              <div className="glass p-10 rounded-[2.5rem] space-y-16 border-white/5 relative overflow-hidden">
                 {/* Objective Function */}
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
-                    <LayoutDashboard className="w-5 h-5" />
-                    Función Objetivo
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-4 text-xl">
-                    <span className="font-mono text-slate-400">Z = </span>
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <LayoutDashboard className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="text-2xl font-bold">Función Objetivo</h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-6 p-8 bg-white/5 rounded-3xl border border-white/10 border-dashed">
+                    <span className="font-mono text-3xl font-black text-slate-500 uppercase">{type} Z = </span>
                     {objective.map((val, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={val}
-                          onChange={(e) => {
-                            const newObj = [...objective];
-                            newObj[i] = parseFloat(e.target.value) || 0;
-                            setObjective(newObj);
-                          }}
-                          className="w-24 bg-white/5 border border-white/10 rounded-xl px-3 py-2 focus:border-primary outline-none transition-all text-center"
-                        />
-                        <span className="text-slate-400 font-mono">X<sub>{i + 1}</sub></span>
-                        {i < objective.length - 1 && <span className="text-slate-600">+</span>}
+                      <div key={i} className="flex items-center gap-4">
+                        <div className="relative group">
+                          <input
+                            type="number"
+                            value={val}
+                            onChange={(e) => {
+                              const newObj = [...objective];
+                              newObj[i] = parseFloat(e.target.value) || 0;
+                              setObjective(newObj);
+                            }}
+                            className="w-32 bg-dark-bg border-2 border-white/10 rounded-2xl px-4 py-4 focus:border-primary outline-none transition-all text-center text-2xl font-bold shadow-lg"
+                          />
+                          <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-dark-bg px-2 text-[10px] font-black text-primary border border-primary/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">COEFF X{i+1}</span>
+                        </div>
+                        <span className="text-slate-400 font-mono text-2xl">X<sub className="text-primary">{i + 1}</sub></span>
+                        {i < objective.length - 1 && <Plus className="w-6 h-6 text-slate-700" />}
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Constraints */}
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
-                    <Settings2 className="w-5 h-5" />
-                    Restricciones
-                  </h3>
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
+                      <Settings2 className="w-6 h-6 text-accent" />
+                    </div>
+                    <h3 className="text-2xl font-bold">Restricciones del Sistema</h3>
+                  </div>
                   <div className="space-y-6">
                     {constraints.map((c, i) => (
-                      <div key={i} className="flex flex-wrap items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-xs text-slate-400">
+                      <div key={i} className="flex flex-wrap items-center gap-6 p-6 bg-white/5 rounded-[2rem] border border-white/10 hover:bg-white/[0.08] transition-colors relative group">
+                        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-12 bg-accent/20 rounded-lg flex items-center justify-center text-xs font-black text-accent border border-accent/30 rotate-3">
                           R{i + 1}
-                        </span>
+                        </div>
                         {c.coeffs.map((val, j) => (
-                          <div key={j} className="flex items-center gap-2">
+                          <div key={j} className="flex items-center gap-4">
                             <input
                               type="number"
                               value={val}
@@ -264,35 +279,37 @@ function App() {
                                 newConstraints[i].coeffs[j] = parseFloat(e.target.value) || 0;
                                 setConstraints(newConstraints);
                               }}
-                              className="w-20 bg-white/5 border border-white/10 rounded-xl px-2 py-2 focus:border-primary outline-none transition-all text-center"
+                              className="w-24 bg-dark-bg border-2 border-white/10 rounded-xl px-2 py-3 focus:border-accent outline-none transition-all text-center text-xl font-bold"
                             />
-                            <span className="text-slate-400 font-mono text-sm">X<sub>{j + 1}</sub></span>
-                            {j < c.coeffs.length - 1 && <span className="text-slate-600">+</span>}
+                            <span className="text-slate-500 font-mono">X<sub className="text-accent">{j + 1}</sub></span>
+                            {j < c.coeffs.length - 1 && <span className="text-slate-800 text-2xl">+</span>}
                           </div>
                         ))}
-                        <select
-                          value={c.op}
-                          onChange={(e) => {
-                            const newConstraints = [...constraints];
-                            newConstraints[i].op = e.target.value;
-                            setConstraints(newConstraints);
-                          }}
-                          className="bg-dark-bg border border-white/10 rounded-xl px-3 py-2 outline-none focus:border-primary cursor-pointer"
-                        >
-                          <option value="<=">&le;</option>
-                          <option value=">=">&ge;</option>
-                          <option value="=">=</option>
-                        </select>
-                        <input
-                          type="number"
-                          value={c.constant}
-                          onChange={(e) => {
-                            const newConstraints = [...constraints];
-                            newConstraints[i].constant = parseFloat(e.target.value) || 0;
-                            setConstraints(newConstraints);
-                          }}
-                          className="w-24 bg-white/5 border border-white/10 rounded-xl px-3 py-2 focus:border-primary outline-none transition-all text-center"
-                        />
+                        <div className="flex items-center gap-4 ml-auto">
+                          <select
+                            value={c.op}
+                            onChange={(e) => {
+                              const newConstraints = [...constraints];
+                              newConstraints[i].op = e.target.value;
+                              setConstraints(newConstraints);
+                            }}
+                            className="bg-dark-bg border-2 border-white/10 rounded-xl px-4 py-3 outline-none focus:border-accent cursor-pointer font-black text-2xl text-accent appearance-none hover:border-accent/50 transition-all text-center min-w-[70px]"
+                          >
+                            <option value="<=">&le;</option>
+                            <option value=">=">&ge;</option>
+                            <option value="=">=</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={c.constant}
+                            onChange={(e) => {
+                              const newConstraints = [...constraints];
+                              newConstraints[i].constant = parseFloat(e.target.value) || 0;
+                              setConstraints(newConstraints);
+                            }}
+                            className="w-32 bg-dark-bg border-2 border-white/10 rounded-xl px-4 py-3 focus:border-accent outline-none transition-all text-center text-2xl font-bold text-accent shadow-inner"
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -300,10 +317,10 @@ function App() {
 
                 <button
                   onClick={handleSolve}
-                  className="w-full py-4 bg-accent hover:opacity-90 text-dark-bg rounded-2xl font-bold transition-all shadow-lg shadow-accent/20 flex items-center justify-center gap-2"
+                  className="w-full py-6 bg-accent hover:opacity-90 text-dark-bg rounded-[2rem] font-black text-2xl transition-all shadow-2xl shadow-accent/20 flex items-center justify-center gap-4 active:scale-[0.99]"
                 >
-                  <Play className="w-5 h-5 fill-current" />
-                  Resolver con Simplex
+                  <Play className="w-8 h-8 fill-current" />
+                  EJECUTAR GRAN M
                 </button>
               </div>
             </motion.div>
@@ -312,85 +329,144 @@ function App() {
           {step === 3 && solution && (
             <motion.div
               key="step3"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="space-y-12"
+              className="space-y-16"
             >
               {solution.error ? (
-                <div className="glass p-8 rounded-3xl border-red-500/50 flex items-center gap-4 text-red-400">
-                  <AlertCircle className="w-12 h-12 shrink-0" />
+                <div className="glass p-12 rounded-[2.5rem] border-red-500/30 flex flex-col items-center text-center gap-6">
+                  <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                    <AlertCircle className="w-12 h-12 text-red-500" />
+                  </div>
                   <div>
-                    <h3 className="text-xl font-bold">Error en el Cálculo</h3>
-                    <p>{solution.error}</p>
-                    <button onClick={reset} className="mt-4 text-sm underline opacity-70">Volver a intentar</button>
+                    <h3 className="text-3xl font-black text-white mb-2">Error en el Cálculo</h3>
+                    <p className="text-red-400 text-lg">{solution.error}</p>
+                    <button onClick={reset} className="mt-8 px-8 py-3 bg-white/5 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/10 transition-all">Revisar Parámetros</button>
                   </div>
                 </div>
               ) : (
                 <>
+                  {/* Results Overview */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-8">
-                      <div className="glass p-8 rounded-3xl overflow-x-auto">
-                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                          <CheckCircle2 className="w-6 h-6 text-accent" />
-                          Resultado Final
+                    <div className="lg:col-span-2 space-y-12">
+                      <div className="glass p-10 rounded-[2.5rem] border-white/5 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                          <CheckCircle2 className="w-32 h-32 text-accent" />
+                        </div>
+                        <h3 className="text-3xl font-black mb-10 flex items-center gap-3">
+                          <CheckCircle2 className="w-8 h-8 text-accent" />
+                          Solución Óptima
                         </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                          <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
-                            <span className="block text-sm text-slate-400 mb-1">Valor de Z</span>
-                            <span className="text-3xl font-bold text-accent">
-                              {solution.result.objectiveValue.toFixed(2)}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
+                          <div className="p-8 bg-accent/10 rounded-[2rem] border border-accent/20 shadow-xl">
+                            <span className="block text-xs font-black text-accent uppercase tracking-widest mb-2 opacity-60">Valor de Z</span>
+                            <span className="text-5xl font-black text-white">
+                              {solution.result.objectiveValue.toFixed(4)}
                             </span>
                           </div>
                           {solution.result.variables.map((val, i) => (
-                            <div key={i} className="p-6 bg-white/5 rounded-2xl border border-white/10">
-                              <span className="block text-sm text-slate-400 mb-1">X<sub>{i + 1}</sub></span>
-                              <span className="text-3xl font-bold text-white">
-                                {val.toFixed(2)}
+                            <div key={i} className="p-8 bg-white/5 rounded-[2rem] border border-white/10">
+                              <span className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Variable X{i + 1}</span>
+                              <span className="text-4xl font-bold text-white">
+                                {val.toFixed(4)}
                               </span>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-bold flex items-center gap-2">
-                          <Info className="w-5 h-5 text-primary" />
-                          Iteraciones del Método
-                        </h3>
-                        <div className="space-y-8">
+                      {/* Iterations */}
+                      <div className="space-y-10">
+                        <div className="flex items-center justify-between px-4">
+                          <h3 className="text-2xl font-black flex items-center gap-3">
+                            <Layers className="w-6 h-6 text-primary" />
+                            Iteraciones del Simplex (Gran M)
+                          </h3>
+                        </div>
+                        
+                        <div className="space-y-12">
                           {solution.tableaus.map((tableau, idx) => (
-                            <div key={idx} className="glass p-6 rounded-2xl border border-white/5 overflow-hidden">
-                              <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm font-semibold text-primary uppercase tracking-wider">
+                            <div key={idx} className="glass rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl animate-fade-in" style={{animationDelay: `${idx * 0.1}s`}}>
+                              <div className="bg-white/[0.03] p-6 border-b border-white/10 flex items-center justify-between">
+                                <span className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
                                   {tableau.title}
                                 </span>
                               </div>
-                              <div className="overflow-x-auto">
-                                <table className="w-full border-collapse text-sm text-center">
+                              <div className="p-2 overflow-x-auto">
+                                <table className="w-full border-separate border-spacing-1 text-center font-mono text-[13px]">
                                   <thead>
-                                    <tr className="border-b border-white/10">
-                                      <th className="p-3 text-slate-500 font-mono">Base</th>
+                                    {/* Cj Row */}
+                                    <tr>
+                                      <td colSpan={2}></td>
+                                      <td className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 font-black text-[10px] uppercase">Cj</td>
+                                      {tableau.cj.map((c, j) => (
+                                        <td key={j} className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 font-black">
+                                          {c.toString()}
+                                        </td>
+                                      ))}
+                                      <td></td>
+                                    </tr>
+                                    {/* Variable Headers */}
+                                    <tr className="text-slate-500">
+                                      <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">V<sub>B</sub></th>
+                                      <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">C<sub>B</sub></th>
+                                      <td className="border-r border-white/10"></td>
                                       {tableau.headers.map((header, j) => (
-                                        <th key={j} className="p-3 font-mono text-slate-300">
+                                        <th key={j} className="p-4 border border-white/5 rounded-xl bg-white/5 text-slate-300 font-bold">
                                           {header}
                                         </th>
                                       ))}
+                                      <th className="p-4 border border-white/5 rounded-xl bg-white/5 text-accent font-black">b<sub>i</sub></th>
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {tableau.data.map((row, i) => (
-                                      <tr key={i} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${i === tableau.data.length - 1 ? 'bg-primary/5 text-primary font-bold' : ''}`}>
-                                        <td className="p-3 font-mono text-slate-400 border-r border-white/10">
-                                          {i === tableau.data.length - 1 ? 'Z' : tableau.headers[tableau.basis[i]]}
+                                    {tableau.matrix.map((row, i) => (
+                                      <tr key={i} className="hover:bg-white/[0.03] transition-colors group">
+                                        <td className="p-4 bg-white/5 border border-white/5 rounded-xl font-black text-slate-300 group-hover:text-primary transition-colors">
+                                          {tableau.headers[tableau.basis[i]]}
                                         </td>
-                                        {row.map((val, j) => (
-                                          <td key={j} className={`p-3 font-mono ${j === row.length - 1 ? 'text-accent' : ''}`}>
+                                        <td className="p-4 bg-white/5 border border-white/5 rounded-xl font-bold text-slate-400">
+                                          {tableau.cj[tableau.basis[i]].toString()}
+                                        </td>
+                                        <td className="border-r border-white/10"></td>
+                                        {row.slice(0, -1).map((val, j) => (
+                                          <td key={j} className="p-4 border border-white/5 rounded-xl text-slate-400 font-medium">
                                             {val.toFixed(2)}
                                           </td>
                                         ))}
+                                        <td className="p-4 border border-white/5 rounded-xl text-white font-black bg-white/5">
+                                          {row[row.length - 1].toFixed(2)}
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>
+                                  <tfoot>
+                                    {/* Zj Row */}
+                                    <tr className="bg-primary/5 text-primary">
+                                      <td colSpan={2}></td>
+                                      <td className="p-4 border border-primary/20 rounded-xl font-black uppercase text-[10px]">Zj</td>
+                                      {tableau.zj.slice(0, -1).map((val, j) => (
+                                        <td key={j} className="p-4 border border-primary/20 rounded-xl font-bold">
+                                          {val.toString()}
+                                        </td>
+                                      ))}
+                                      <td className="p-4 border border-primary/20 rounded-xl font-black text-white bg-primary/20 shadow-inner">
+                                        {tableau.zj[tableau.zj.length - 1].toString()}
+                                      </td>
+                                    </tr>
+                                    {/* Cj - Zj Row */}
+                                    <tr className="bg-accent/5 text-accent">
+                                      <td colSpan={2}></td>
+                                      <td className="p-4 border border-accent/20 rounded-xl font-black uppercase text-[10px]">Cj-Zj</td>
+                                      {tableau.cj_zj.map((val, j) => (
+                                        <td key={j} className="p-4 border border-accent/20 rounded-xl font-bold">
+                                          {val.toString()}
+                                        </td>
+                                      ))}
+                                      <td></td>
+                                    </tr>
+                                  </tfoot>
                                 </table>
                               </div>
                             </div>
@@ -399,31 +475,54 @@ function App() {
                       </div>
                     </div>
 
-                    <div className="space-y-6">
-                      <div className="glass p-8 rounded-3xl sticky top-8">
-                        <h4 className="font-bold mb-4 flex items-center gap-2 text-slate-300">
-                          Resumen del Modelo
-                        </h4>
-                        <div className="space-y-4 text-sm text-slate-400">
-                          <div className="flex justify-between py-2 border-b border-white/5">
-                            <span>Tipo:</span>
-                            <span className="text-white font-medium uppercase">{type}</span>
+                    <div className="space-y-8">
+                      {/* Sensitivity Analysis Sidebar */}
+                      <div className="glass p-10 rounded-[2.5rem] sticky top-8 border-white/5 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-8">
+                          <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
+                            <Info className="w-6 h-6 text-accent" />
                           </div>
-                          <div className="flex justify-between py-2 border-b border-white/5">
-                            <span>Variables:</span>
-                            <span className="text-white font-medium">{varCount}</span>
+                          <h4 className="text-xl font-black">Análisis de Sensibilidad</h4>
+                        </div>
+                        
+                        <div className="space-y-8">
+                          <div>
+                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Precios Sombra</span>
+                            <div className="space-y-3">
+                              {solution.result.sensitivity.shadowPrices.map((sp, i) => (
+                                <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group hover:border-accent/50 transition-all">
+                                  <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">{sp.name}</span>
+                                  <span className="text-lg font-black text-accent">{sp.value.toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="flex justify-between py-2 border-b border-white/5">
-                            <span>Restricciones:</span>
-                            <span className="text-white font-medium">{constCount}</span>
+
+                          <div className="pt-6 border-t border-white/10">
+                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Parámetros del Modelo</span>
+                            <div className="space-y-4 text-sm text-slate-400">
+                              <div className="flex justify-between py-3 border-b border-white/5">
+                                <span className="font-medium">Tipo:</span>
+                                <span className={`font-black uppercase ${type === 'min' ? 'text-accent' : 'text-primary'}`}>{type}</span>
+                              </div>
+                              <div className="flex justify-between py-3 border-b border-white/5">
+                                <span className="font-medium">Variables:</span>
+                                <span className="text-white font-bold">{varCount}</span>
+                              </div>
+                              <div className="flex justify-between py-3 border-b border-white/5">
+                                <span className="font-medium">Restricciones:</span>
+                                <span className="text-white font-bold">{constCount}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
+
                         <button 
                           onClick={reset}
-                          className="w-full mt-8 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                          className="w-full mt-12 py-4 rounded-2xl bg-white/5 border-2 border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-black text-slate-300 hover:text-white active:scale-95"
                         >
-                          <RefreshCcw className="w-4 h-4" />
-                          Nuevo Problema
+                          <RefreshCcw className="w-5 h-5" />
+                          NUEVO PROBLEMA
                         </button>
                       </div>
                     </div>
@@ -435,10 +534,14 @@ function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="relative z-10 py-12 border-t border-white/5 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-slate-500 text-sm">
-            &copy; 2026 SimplexOptimizer Engine. Desarrollado con precisión matemática.
+      <footer className="relative z-10 py-16 border-t border-white/5 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-6">
+          <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-help">
+            <BrainCircuit className="w-5 h-5 text-primary" />
+            <span className="font-bold tracking-tight text-sm text-slate-300">SimplexOptimizer v2.0</span>
+          </div>
+          <p className="text-slate-600 text-[10px] uppercase tracking-[0.3em] font-black">
+            Investigación de Operaciones I &bull; 2026
           </p>
         </div>
       </footer>
