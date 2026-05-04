@@ -60,7 +60,7 @@ export class SimplexSolver {
     this.result = null;
     this.error = null;
     this.colNames = [];
-    this.cj = []; // Objective coefficients row
+    this.cj = []; 
   }
 
   solve() {
@@ -104,7 +104,6 @@ export class SimplexSolver {
     const cj = new Array(totalVars).fill(new MValue(0, 0));
     const colNames = [];
 
-    // Names and Cj setup
     for (let j = 0; j < this.variablesCount; j++) {
       cj[j] = new MValue(this.objective[j], 0);
       colNames.push(`X${j + 1}`);
@@ -130,7 +129,6 @@ export class SimplexSolver {
         colNames[surplusIdx] = `S${surplusIdx - this.variablesCount + 1}`;
         
         matrix[i][artificialIdx] = 1;
-        // M in objective: +M for Min, -M for Max
         cj[artificialIdx] = new MValue(0, this.type === 'min' ? 1 : -1);
         colNames[artificialIdx] = `A${artificialIdx - (this.variablesCount + slacks + surpluses) + 1}`;
         basis.push(artificialIdx);
@@ -160,10 +158,8 @@ export class SimplexSolver {
     while (iterations < maxIterations) {
       const { zj, cj_zj } = this.calculateZj(currentMatrix, currentBasis);
       
-      // Find pivot column
       let pivotCol = -1;
       if (this.type === 'max') {
-        // Maximize: find most positive Cj - Zj
         let maxVal = new MValue(1e-9, 0);
         for (let j = 0; j < cols - 1; j++) {
           if (maxVal.isLessThan(cj_zj[j])) {
@@ -172,7 +168,6 @@ export class SimplexSolver {
           }
         }
       } else {
-        // Minimize: find most negative Cj - Zj
         let minVal = new MValue(-1e-9, 0);
         for (let j = 0; j < cols - 1; j++) {
           if (cj_zj[j].isLessThan(minVal)) {
@@ -184,7 +179,6 @@ export class SimplexSolver {
 
       if (pivotCol === -1) break;
 
-      // Find pivot row
       let pivotRow = -1;
       let minRatio = Infinity;
       for (let i = 0; i < rows; i++) {
@@ -206,8 +200,6 @@ export class SimplexSolver {
       this.captureTableau(currentMatrix, currentBasis, `Iteración ${iterations}`);
     }
 
-    // Check for artificial variables in basis with non-zero value
-    const finalTableau = this.calculateZj(currentMatrix, currentBasis);
     currentBasis.forEach((varIdx, rowIdx) => {
       if (this.colNames[varIdx].startsWith('A') && Math.abs(currentMatrix[rowIdx][cols - 1]) > 1e-6) {
         throw new Error("Infeasible");
@@ -287,15 +279,33 @@ export class SimplexSolver {
   }
 
   calculateSensitivity(matrix, basis) {
-    // Simple Sensitivity: Shadow Prices are the Zj values for slack/surplus columns
-    const { zj } = this.calculateZj(matrix, basis);
+    const { zj, cj_zj } = this.calculateZj(matrix, basis);
     const shadowPrices = [];
+    const reducedCosts = [];
+
     this.colNames.forEach((name, j) => {
       if (name.startsWith('S')) {
-        shadowPrices.push({ name, value: zj[j].real });
+        // Shadow Price is Zj for slack variables
+        shadowPrices.push({ name, value: Math.abs(zj[j].real) });
+      } else if (name.startsWith('X')) {
+        // Reduced Cost is Cj - Zj
+        reducedCosts.push({ name, value: cj_zj[j].real });
       }
     });
 
-    return { shadowPrices };
+    return { shadowPrices, reducedCosts };
+  }
+
+  getDual() {
+    // Basic dual construction info
+    return {
+      objective: this.constraints.map(c => c.constant),
+      constraints: this.objective.map((val, i) => ({
+        coeffs: this.constraints.map(c => c.coeffs[i]),
+        op: this.type === 'max' ? '>=' : '<=',
+        constant: val
+      })),
+      type: this.type === 'max' ? 'min' : 'max'
+    };
   }
 }

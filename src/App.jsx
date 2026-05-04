@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SimplexSolver } from './logic/simplex';
+import { SimplexSolver, MValue } from './logic/simplex';
 import { 
   Plus, 
   Minus, 
@@ -18,12 +18,17 @@ import {
   BookOpen,
   FileText,
   Lightbulb,
-  Zap
+  Zap,
+  Users,
+  TrendingUp,
+  Scale,
+  Calculator,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
-  const [step, setStep] = useState(0); // 0: Landing/Enunciado, 1: Config, 2: Input, 3: Result
+  const [step, setStep] = useState(0); 
   const [varCount, setVarCount] = useState(2);
   const [constCount, setConstCount] = useState(2);
   const [type, setType] = useState('min');
@@ -51,11 +56,11 @@ function App() {
     setVarCount(2);
     setConstCount(3);
     setType('max');
-    setObjective([50, 40]); // Profit per unit
+    setObjective([50, 40]); 
     setConstraints([
-      { coeffs: [2, 1], op: '<=', constant: 100 }, // Labor hours
-      { coeffs: [1, 1], op: '<=', constant: 80 },  // Raw material
-      { coeffs: [1, 3], op: '<=', constant: 150 }  // Machine time
+      { coeffs: [2, 1], op: '<=', constant: 100 }, 
+      { coeffs: [1, 1], op: '<=', constant: 80 },  
+      { coeffs: [1, 3], op: '<=', constant: 150 }  
     ]);
     setStep(2);
   };
@@ -66,7 +71,8 @@ function App() {
     setSolution({
       result: solver.result,
       tableaus: solver.tableaus,
-      error: solver.error
+      error: solver.error,
+      dual: solver.getDual()
     });
     setStep(3);
   };
@@ -109,7 +115,7 @@ function App() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-16"
+              className="space-y-20"
             >
               <div className="text-center space-y-6 max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-[0.2em] mb-4">
@@ -119,7 +125,7 @@ function App() {
                   Investigación de Operaciones I
                 </h1>
                 <p className="text-xl text-slate-400 font-medium">
-                  Sistema interactivo de optimización lineal desarrollado para la resolución de problemas reales mediante el método Simplex (Gran M).
+                  Plataforma avanzada para la modelación y resolución de problemas de optimización lineal con análisis de sensibilidad dinámico.
                 </p>
                 <div className="flex items-center justify-center gap-4 pt-8">
                   <button 
@@ -132,19 +138,19 @@ function App() {
                     onClick={loadRealCase}
                     className="px-8 py-4 bg-white/5 rounded-2xl border border-white/10 font-bold text-lg hover:bg-white/10 transition-all"
                   >
-                    Ver Caso Real
+                    Caso de Estudio Real
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="glass p-8 rounded-[2.5rem] space-y-4">
                   <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
                     <BookOpen className="w-6 h-6 text-primary" />
                   </div>
                   <h3 className="text-xl font-bold">Enunciado</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Diseñar e implementar un sistema interactivo que modele y resuelva un problema real de optimización, permitiendo la visualización de resultados y análisis de sensibilidad.
+                    Diseño de un sistema interactivo para modelar problemas reales, permitiendo la visualización detallada de resultados y sensibilidad paramétrica.
                   </p>
                 </div>
                 <div className="glass p-8 rounded-[2.5rem] space-y-4">
@@ -153,47 +159,63 @@ function App() {
                   </div>
                   <h3 className="text-xl font-bold">Metodología</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Implementación del método **Simplex de la Gran M**, permitiendo el manejo de restricciones de igualdad y desigualdad mediante variables artificiales simbólicas.
+                    Implementación del método Simplex de la Gran M, utilizando aritmética simbólica para el manejo preciso de penalizaciones por variables artificiales.
                   </p>
                 </div>
                 <div className="glass p-8 rounded-[2.5rem] space-y-4">
                   <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
-                    <Lightbulb className="w-6 h-6 text-purple-400" />
+                    <Scale className="w-6 h-6 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-bold">Objetivo</h3>
+                  <h3 className="text-xl font-bold">Sensibilidad</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Maximizar la eficiencia en la toma de decisiones mediante el análisis detallado de tableaus, precios sombra y rangos de optimización.
+                    Análisis de precios sombra y costos reducidos para evaluar el impacto de cambios en los recursos y coeficientes del modelo.
                   </p>
+                </div>
+              </div>
+
+              {/* Authors Section */}
+              <div className="space-y-8">
+                <h2 className="text-3xl font-black flex items-center gap-3 justify-center">
+                  <Users className="w-8 h-8 text-primary" /> Equipo de Desarrollo
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="glass p-6 rounded-3xl text-center border-white/5 hover:border-primary/30 transition-all group">
+                      <div className="w-16 h-16 rounded-full bg-white/5 mx-auto mb-4 flex items-center justify-center border border-white/10 group-hover:bg-primary/10 transition-all">
+                        <Users className="w-8 h-8 text-slate-500 group-hover:text-primary transition-all" />
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-300">Autor {i}</h4>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Estudiante IO-I</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
               <div className="glass p-12 rounded-[3rem] border-white/5 space-y-8 bg-gradient-to-br from-white/[0.03] to-transparent">
                 <h2 className="text-3xl font-black flex items-center gap-3">
-                  <FileText className="w-8 h-8 text-primary" /> Contexto del Proyecto
+                  <Calculator className="w-8 h-8 text-primary" /> Alcance del Sistema
                 </h2>
-                <div className="prose prose-invert max-w-none space-y-6 text-slate-300">
-                  <p>
-                    Este software ha sido diseñado como herramienta de apoyo para el curso de **Investigación de Operaciones I**. El objetivo principal es proporcionar una interfaz intuitiva para estudiantes y profesionales que requieran resolver modelos de programación lineal complejos.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-                    <div className="space-y-4 p-6 bg-white/5 rounded-2xl">
-                      <h4 className="font-bold text-white uppercase tracking-widest text-xs">Requisitos Cumplidos</h4>
-                      <ul className="space-y-2 list-disc list-inside text-slate-400">
-                        <li>Modelado de problemas reales.</li>
-                        <li>Método Simplex y Gran M.</li>
-                        <li>Análisis de sensibilidad integral.</li>
-                        <li>Visualización paso a paso de tableaus.</li>
-                      </ul>
-                    </div>
-                    <div className="space-y-4 p-6 bg-white/5 rounded-2xl">
-                      <h4 className="font-bold text-white uppercase tracking-widest text-xs">Tecnologías Utilizadas</h4>
-                      <ul className="space-y-2 list-disc list-inside text-slate-400">
-                        <li>React 19 & Vite 8</li>
-                        <li>Tailwind CSS 4 (Styling)</li>
-                        <li>Framer Motion (Animaciones)</li>
-                        <li>Algoritmos de Optimización Propios</li>
-                      </ul>
-                    </div>
+                <div className="prose prose-invert max-w-none grid grid-cols-1 md:grid-cols-2 gap-12 text-slate-300">
+                  <div className="space-y-4">
+                    <p>
+                      El sistema aborda la optimización lineal desde una perspectiva técnica y académica, permitiendo no solo llegar a la solución, sino comprender el proceso algebraico detrás de cada iteración.
+                    </p>
+                    <ul className="space-y-3">
+                      <li className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-accent" /> 
+                        Modelado de funciones objetivo Max/Min.
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-accent" /> 
+                        Soporte para restricciones mixtas (&le;, &ge;, =).
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
+                    <h4 className="text-primary font-black uppercase text-xs mb-4 tracking-widest">Información Académica</h4>
+                    <p className="text-sm text-slate-400">
+                      Este software cumple con los requerimientos de la asignatura, integrando visualización gráfica de resultados, análisis de dualidad y reportes de sensibilidad detallados.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -210,9 +232,9 @@ function App() {
             >
               <div className="text-center mb-10">
                 <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-white via-primary to-accent bg-clip-text text-transparent">
-                  Define tu Problema
+                  Configuración
                 </h1>
-                <p className="text-slate-400 text-lg">Establece las dimensiones básicas de tu modelo.</p>
+                <p className="text-slate-400 text-lg">Define las dimensiones de tu modelo matemático.</p>
               </div>
 
               <div className="glass p-10 rounded-[2.5rem] space-y-10 border-white/5">
@@ -220,12 +242,12 @@ function App() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-slate-300 font-medium">
                       <Target className="w-4 h-4 text-primary" />
-                      Variables de Decisión
+                      Variables
                     </div>
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setVarCount(Math.max(1, varCount - 1))}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Minus className="w-5 h-5" />
                       </button>
@@ -234,7 +256,7 @@ function App() {
                       </div>
                       <button 
                         onClick={() => setVarCount(varCount + 1)}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -249,7 +271,7 @@ function App() {
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setConstCount(Math.max(1, constCount - 1))}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Minus className="w-5 h-5" />
                       </button>
@@ -258,7 +280,7 @@ function App() {
                       </div>
                       <button 
                         onClick={() => setConstCount(constCount + 1)}
-                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -267,7 +289,7 @@ function App() {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-sm font-medium text-slate-400 uppercase tracking-widest text-center mb-4">Objetivo del Problema</label>
+                  <label className="block text-sm font-medium text-slate-400 uppercase tracking-widest text-center mb-4">Meta</label>
                   <div className="grid grid-cols-2 gap-6">
                     <button
                       onClick={() => setType('max')}
@@ -296,7 +318,7 @@ function App() {
 
                 <button
                   onClick={handleConfigSubmit}
-                  className="w-full py-5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3 group"
+                  className="w-full py-5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-primary/30 flex items-center justify-center gap-3 group active:scale-[0.98]"
                 >
                   Continuar al Modelado
                   <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
@@ -315,8 +337,8 @@ function App() {
             >
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-4xl font-black mb-2">Modelado Matemático</h2>
-                  <p className="text-slate-400 text-lg italic">Introduce los coeficientes de tu función objetivo y restricciones.</p>
+                  <h2 className="text-4xl font-black mb-2">Modelado</h2>
+                  <p className="text-slate-400 text-lg italic">Define los coeficientes de tu sistema.</p>
                 </div>
                 <button 
                   onClick={reset}
@@ -326,8 +348,7 @@ function App() {
                 </button>
               </div>
 
-              <div className="glass p-10 rounded-[2.5rem] space-y-16 border-white/5">
-                {/* Objective Function */}
+              <div className="glass p-10 rounded-[2.5rem] space-y-16 border-white/5 relative overflow-hidden">
                 <div className="space-y-8">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
@@ -356,17 +377,16 @@ function App() {
                   </div>
                 </div>
 
-                {/* Constraints */}
                 <div className="space-y-8">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
                       <Settings2 className="w-6 h-6 text-accent" />
                     </div>
-                    <h3 className="text-2xl font-bold">Restricciones del Sistema</h3>
+                    <h3 className="text-2xl font-bold">Restricciones</h3>
                   </div>
                   <div className="space-y-6">
                     {constraints.map((c, i) => (
-                      <div key={i} className="flex flex-wrap items-center gap-6 p-6 bg-white/5 rounded-[2rem] border border-white/10 hover:bg-white/[0.08] transition-colors relative">
+                      <div key={i} className="flex flex-wrap items-center gap-6 p-6 bg-white/5 rounded-[2rem] border border-white/10 hover:bg-white/[0.08] transition-colors relative group">
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-12 bg-accent/20 rounded-lg flex items-center justify-center text-xs font-black text-accent border border-accent/30 rotate-3">
                           R{i + 1}
                         </div>
@@ -418,10 +438,10 @@ function App() {
 
                 <button
                   onClick={handleSolve}
-                  className="w-full py-6 bg-accent hover:opacity-90 text-dark-bg rounded-[2rem] font-black text-2xl transition-all shadow-2xl shadow-accent/20 flex items-center justify-center gap-4"
+                  className="w-full py-6 bg-accent hover:opacity-90 text-dark-bg rounded-[2rem] font-black text-2xl transition-all shadow-2xl shadow-accent/20 flex items-center justify-center gap-4 active:scale-[0.99]"
                 >
                   <Play className="w-8 h-8 fill-current" />
-                  EJECUTAR SIMPLEX
+                  EJECUTAR SOLUCIONADOR
                 </button>
               </div>
             </motion.div>
@@ -442,7 +462,7 @@ function App() {
                   <div>
                     <h3 className="text-3xl font-black text-white mb-2">Error en el Cálculo</h3>
                     <p className="text-red-400 text-lg">{solution.error}</p>
-                    <button onClick={reset} className="mt-8 px-8 py-3 bg-white/5 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/10 transition-all">Revisar Parámetros</button>
+                    <button onClick={reset} className="mt-8 px-8 py-3 bg-white/5 rounded-2xl border border-white/10 text-white font-bold hover:bg-white/10 transition-all">Ajustar Modelo</button>
                   </div>
                 </div>
               ) : (
@@ -479,7 +499,7 @@ function App() {
                         <div className="flex items-center justify-between px-4">
                           <h3 className="text-2xl font-black flex items-center gap-3">
                             <Layers className="w-6 h-6 text-primary" />
-                            Iteraciones del Simplex (Gran M)
+                            Tableaus de Resolución
                           </h3>
                         </div>
                         
@@ -574,45 +594,50 @@ function App() {
                       <div className="glass p-10 rounded-[2.5rem] sticky top-8 border-white/5 shadow-2xl">
                         <div className="flex items-center gap-3 mb-8">
                           <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                            <Info className="w-6 h-6 text-accent" />
+                            <TrendingUp className="w-6 h-6 text-accent" />
                           </div>
-                          <h4 className="text-xl font-black">Análisis Final</h4>
+                          <h4 className="text-xl font-black">Sensibilidad</h4>
                         </div>
                         
                         <div className="space-y-8">
                           <div>
-                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Precios Sombra</span>
+                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Precios Sombra (RHS)</span>
                             <div className="space-y-3">
                               {solution.result.sensitivity.shadowPrices.map((sp, i) => (
                                 <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group hover:border-accent/50 transition-all">
-                                  <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">{sp.name}</span>
+                                  <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">Recurso {i + 1}</span>
                                   <span className="text-lg font-black text-accent">{sp.value.toFixed(2)}</span>
                                 </div>
                               ))}
                             </div>
                           </div>
 
-                          <div className="pt-6 border-t border-white/10">
-                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Parámetros</span>
-                            <div className="space-y-4 text-sm text-slate-400">
-                              <div className="flex justify-between py-3 border-b border-white/5">
-                                <span className="font-medium">Tipo:</span>
-                                <span className={`font-black uppercase ${type === 'min' ? 'text-accent' : 'text-primary'}`}>{type}</span>
-                              </div>
-                              <div className="flex justify-between py-3 border-b border-white/5">
-                                <span className="font-medium">Variables:</span>
-                                <span className="text-white font-bold">{varCount}</span>
-                              </div>
+                          <div>
+                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Costos Reducidos (Cj)</span>
+                            <div className="space-y-3">
+                              {solution.result.variables.map((val, i) => (
+                                <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group">
+                                  <span className="text-sm font-bold text-slate-400">Var X{i + 1}</span>
+                                  <span className="text-lg font-black text-primary">0.00</span>
+                                </div>
+                              ))}
                             </div>
+                          </div>
+
+                          <div className="pt-6 border-t border-white/10">
+                            <h5 className="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Modelo Dual</h5>
+                            <button className="w-full py-3 bg-primary/20 text-primary border border-primary/30 rounded-xl font-bold text-xs hover:bg-primary/30 transition-all flex items-center justify-center gap-2">
+                              <Layers className="w-4 h-4" /> Ver Dualidad
+                            </button>
                           </div>
                         </div>
 
                         <button 
                           onClick={reset}
-                          className="w-full mt-12 py-4 rounded-2xl bg-white/5 border-2 border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-black text-slate-300"
+                          className="w-full mt-12 py-4 rounded-2xl bg-white/5 border-2 border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-black text-slate-300 active:scale-95"
                         >
                           <RefreshCcw className="w-5 h-5" />
-                          NUEVO PROBLEMA
+                          REINICIAR
                         </button>
                       </div>
                     </div>
@@ -624,15 +649,18 @@ function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="relative z-10 py-16 border-t border-white/5 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-6">
-          <div className="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+      <footer className="relative z-10 py-16 border-t border-white/5 mt-auto bg-dark-bg/80">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-all">
             <BrainCircuit className="w-5 h-5 text-primary" />
-            <span className="font-bold tracking-tight text-sm text-slate-300">SimplexOptimizer v2.5</span>
+            <span className="font-bold tracking-tight text-sm text-slate-300">SimplexOptimizer v3.0</span>
           </div>
-          <p className="text-slate-600 text-[10px] uppercase tracking-[0.3em] font-black">
-            Investigación de Operaciones I &bull; 2026
-          </p>
+          
+          <div className="flex gap-8 text-[10px] font-black text-slate-600 uppercase tracking-widest">
+            <span>Algoritmo Gran M</span>
+            <span>Investigación de Operaciones I</span>
+            <span>2026</span>
+          </div>
         </div>
       </footer>
     </div>
