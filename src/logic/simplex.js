@@ -77,9 +77,56 @@ export class SimplexSolver {
     });
   }
 
+  validateInputs() {
+    // 1. Check objective function
+    const isObjectiveZero = this.objective.every(v => Math.abs(v) < 1e-10);
+    if (isObjectiveZero) {
+      this.isTrivial = true;
+    }
+
+    // 2. Process constraints
+    const activeConstraints = [];
+    for (const c of this.constraints) {
+      const isAllZeros = c.coeffs.every(v => Math.abs(v) < 1e-10);
+      
+      if (isAllZeros) {
+        // Check if impossible: e.g., 0 >= 10 or 0 = 10
+        let isImpossible = false;
+        if (c.op === '>=' && c.constant > 1e-10) isImpossible = true;
+        if (c.op === '=' && Math.abs(c.constant) > 1e-10) isImpossible = true;
+        if (c.op === '<=' && c.constant < -1e-10) isImpossible = true;
+
+        if (isImpossible) {
+          throw new Error("ImmediateInfeasible");
+        }
+        // If not impossible, it's redundant (e.g., 0 <= 10), so we ignore it
+        continue;
+      }
+      activeConstraints.push(c);
+    }
+
+    if (activeConstraints.length === 0 && !this.isTrivial) {
+      // No valid constraints provided
+      throw new Error("NoConstraints");
+    }
+
+    this.constraints = activeConstraints;
+  }
+
   solve() {
     try {
       this.normalizeConstraints();
+      this.validateInputs();
+      
+      if (this.isTrivial) {
+        this.result = {
+          variables: new Array(this.variablesCount).fill(0),
+          objectiveValue: 0
+        };
+        this.tableaus = [];
+        return;
+      }
+
       let initialization;
       if (this.method === 'simplex') {
         initialization = this.initializeStandardSimplex();
@@ -101,8 +148,9 @@ export class SimplexSolver {
         this.error = "Error durante el cálculo. Revisa tus datos.";
       } else {
         if (err.message === "Unbounded") this.error = "El problema no tiene fin (No acotado).";
-        else if (err.message === "Infeasible") this.error = "El problema es infactible.";
+        else if (err.message === "Infeasible" || err.message === "ImmediateInfeasible") this.error = "El problema es infactible (No tiene solución).";
         else if (err.message === "MethodIncompatible") this.error = "El método Simplex Estándar solo soporta restricciones <=. Usa el método de la Gran M.";
+        else if (err.message === "NoConstraints") this.error = "No se han ingresado restricciones válidas.";
       }
     }
   }

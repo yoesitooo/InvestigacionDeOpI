@@ -564,88 +564,98 @@ function App() {
                         </div>
                         
                         <div className="space-y-12">
-                          {solution.tableaus.map((tableau, idx) => (
-                            <div key={idx} className="glass rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl animate-fade-in" style={{animationDelay: `${idx * 0.1}s`}}>
-                              <div className="bg-white/[0.03] p-6 border-b border-white/10 flex items-center justify-between">
-                                <span className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                                  {tableau.title}
-                                </span>
-                              </div>
-                              <div className="p-2 overflow-x-auto">
-                                <table className="w-full border-separate border-spacing-1 text-center font-mono text-[13px]">
-                                  <thead>
-                                    <tr>
-                                      <td colSpan={2}></td>
-                                      <td className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 font-black text-[10px] uppercase">Cj</td>
-                                      {tableau.cj.map((c, j) => (
-                                        <td key={j} className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 font-black">
-                                          {c.toString()}
-                                        </td>
-                                      ))}
-                                      <td></td>
-                                    </tr>
-                                    <tr className="text-slate-500">
-                                      <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">V<sub>B</sub></th>
-                                      <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">C<sub>B</sub></th>
-                                      <td className="border-r border-white/10"></td>
-                                      {tableau.headers.map((header, j) => (
-                                        <th key={j} className="p-4 border border-white/5 rounded-xl bg-white/5 text-slate-300 font-bold">
-                                          {header}
-                                        </th>
-                                      ))}
-                                      <th className="p-4 border border-white/5 rounded-xl bg-white/5 text-accent font-black">b<sub>i</sub></th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {tableau.matrix.map((row, i) => (
-                                      <tr key={i} className="hover:bg-white/[0.03] transition-colors group">
-                                        <td className="p-4 bg-white/5 border border-white/5 rounded-xl font-black text-slate-300 group-hover:text-primary transition-colors">
-                                          {tableau.headers[tableau.basis[i]]}
-                                        </td>
-                                        <td className="p-4 bg-white/5 border border-white/5 rounded-xl font-bold text-slate-400">
-                                          {tableau.cj[tableau.basis[i]].toString()}
-                                        </td>
-                                        <td className="border-r border-white/10"></td>
-                                        {row.slice(0, -1).map((val, j) => (
-                                          <td key={j} className="p-4 border border-white/5 rounded-xl text-slate-400 font-medium">
-                                            {val.toFixed(2)}
+                          {solution.tableaus.length > 0 ? (
+                            solution.tableaus.map((tableau, idx) => (
+                              <div key={idx} className="glass rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl animate-fade-in" style={{animationDelay: `${idx * 0.1}s`}}>
+                                <div className="bg-white/[0.03] p-6 border-b border-white/10 flex items-center justify-between">
+                                  <span className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                                    {tableau.title}
+                                  </span>
+                                </div>
+                                <div className="p-2 overflow-x-auto">
+                                  <table className="w-full border-separate border-spacing-1 text-center font-mono text-[13px]">
+                                    <thead>
+                                      <tr>
+                                        <td colSpan={2}></td>
+                                        <td className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 font-black text-[10px] uppercase">Cj</td>
+                                        {tableau.cj.map((c, j) => (
+                                          <td key={j} className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 font-black">
+                                            {c.toString()}
                                           </td>
                                         ))}
-                                        <td className="p-4 border border-white/5 rounded-xl text-white font-black bg-white/5">
-                                          {row[row.length - 1].toFixed(2)}
+                                        <td></td>
+                                      </tr>
+                                      <tr className="text-slate-500">
+                                        <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">V<sub>B</sub></th>
+                                        <th className="p-4 border border-white/5 rounded-xl bg-white/5 font-black text-xs">C<sub>B</sub></th>
+                                        <td className="border-r border-white/10"></td>
+                                        {tableau.headers.map((header, j) => (
+                                          <th key={j} className="p-4 border border-white/5 rounded-xl bg-white/5 text-slate-300 font-bold">
+                                            {header}
+                                          </th>
+                                        ))}
+                                        <th className="p-4 border border-white/5 rounded-xl bg-white/5 text-accent font-black">b<sub>i</sub></th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {tableau.matrix.map((row, i) => (
+                                        <tr key={i} className="hover:bg-white/[0.03] transition-colors group">
+                                          <td className="p-4 bg-white/5 border border-white/5 rounded-xl font-black text-slate-300 group-hover:text-primary transition-colors">
+                                            {tableau.headers[tableau.basis[i]]}
+                                          </td>
+                                          <td className="p-4 bg-white/5 border border-white/5 rounded-xl font-bold text-slate-400">
+                                            {tableau.cj[tableau.basis[i]].toString()}
+                                          </td>
+                                          <td className="border-r border-white/10"></td>
+                                          {row.slice(0, -1).map((val, j) => (
+                                            <td key={j} className="p-4 border border-white/5 rounded-xl text-slate-400 font-medium">
+                                              {val.toFixed(2)}
+                                            </td>
+                                          ))}
+                                          <td className="p-4 border border-white/5 rounded-xl text-white font-black bg-white/5">
+                                            {row[row.length - 1].toFixed(2)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                    <tfoot>
+                                      <tr className="bg-primary/5 text-primary">
+                                        <td colSpan={2}></td>
+                                        <td className="p-4 border border-primary/20 rounded-xl font-black uppercase text-[10px]">Zj</td>
+                                        {tableau.zj.slice(0, -1).map((val, j) => (
+                                          <td key={j} className="p-4 border border-primary/20 rounded-xl font-bold">
+                                            {val.toString()}
+                                          </td>
+                                        ))}
+                                        <td className="p-4 border border-primary/20 rounded-xl font-black text-white bg-primary/20 shadow-inner">
+                                          {tableau.zj[tableau.zj.length - 1].toString()}
                                         </td>
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                  <tfoot>
-                                    <tr className="bg-primary/5 text-primary">
-                                      <td colSpan={2}></td>
-                                      <td className="p-4 border border-primary/20 rounded-xl font-black uppercase text-[10px]">Zj</td>
-                                      {tableau.zj.slice(0, -1).map((val, j) => (
-                                        <td key={j} className="p-4 border border-primary/20 rounded-xl font-bold">
-                                          {val.toString()}
-                                        </td>
-                                      ))}
-                                      <td className="p-4 border border-primary/20 rounded-xl font-black text-white bg-primary/20 shadow-inner">
-                                        {tableau.zj[tableau.zj.length - 1].toString()}
-                                      </td>
-                                    </tr>
-                                    <tr className="bg-accent/10 text-accent group">
-                                      <td colSpan={2}></td>
-                                      <td className="p-4 border border-accent/20 rounded-xl font-black uppercase text-[10px] shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">Cj-Zj</td>
-                                      {tableau.cj_zj.map((val, j) => (
-                                        <td key={j} className="p-4 border border-accent/20 rounded-xl font-black text-sm">
-                                          {val.toString()}
-                                        </td>
-                                      ))}
-                                      <td></td>
-                                    </tr>
-                                  </tfoot>
-                                </table>
+                                      <tr className="bg-accent/10 text-accent group">
+                                        <td colSpan={2}></td>
+                                        <td className="p-4 border border-accent/20 rounded-xl font-black uppercase text-[10px] shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">Cj-Zj</td>
+                                        {tableau.cj_zj.map((val, j) => (
+                                          <td key={j} className="p-4 border border-accent/20 rounded-xl font-black text-sm">
+                                            {val.toString()}
+                                          </td>
+                                        ))}
+                                        <td></td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                </div>
                               </div>
+                            ))
+                          ) : (
+                            <div className="glass p-12 rounded-[2.5rem] border-white/5 text-center space-y-4">
+                              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto border border-primary/20">
+                                <Info className="w-8 h-8 text-primary" />
+                              </div>
+                              <h4 className="text-xl font-bold">Solución Directa</h4>
+                              <p className="text-slate-400 text-sm">No se requieren iteraciones para este modelo (Solución Trivial).</p>
                             </div>
-                          ))}
+                          )}
                         </div>
                       </div>
                     </div>
