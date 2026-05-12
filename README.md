@@ -100,11 +100,11 @@ Si deseas correr este proyecto en tu entorno local, sigue estos pasos:
 
 Este proyecto fue desarrollado en colaboración por el siguiente equipo de estudiantes para la asignatura de **Investigación de Operaciones I**:
 
-*   👤 **Autor 1** 
-*   👤 **Autor 2**
-*   👤 **Autor 3**
-*   👤 **Autor 4**
-*   👤 **Autor 5**
+*   👤 **Edgar Julian Roldan** 
+*   👤 **Luis Fernando Lopez**
+*   👤 **Jose David Cucanchon**
+*   👤 **Alex Morales**
+*   👤 **Jhoe Luis Miranda**
 
 > **Nota**: Este proyecto tiene fines educativos y académicos. (2026)
 

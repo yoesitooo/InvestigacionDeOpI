@@ -51,11 +51,12 @@ export class MValue {
 }
 
 export class SimplexSolver {
-  constructor(objective, variablesCount, constraints, type = 'max') {
+  constructor(objective, variablesCount, constraints, type = 'max', method = 'bigm') {
     this.objective = objective; 
     this.variablesCount = variablesCount;
     this.constraints = constraints; 
     this.type = type;
+    this.method = method;
     this.tableaus = [];
     this.result = null;
     this.error = null;
@@ -65,7 +66,14 @@ export class SimplexSolver {
 
   solve() {
     try {
-      const { matrix, basis, cj, colNames } = this.initializeBigM();
+      let initialization;
+      if (this.method === 'simplex') {
+        initialization = this.initializeStandardSimplex();
+      } else {
+        initialization = this.initializeBigM();
+      }
+      
+      const { matrix, basis, cj, colNames } = initialization;
       this.cj = cj;
       this.colNames = colNames;
       
@@ -75,13 +83,52 @@ export class SimplexSolver {
       this.result = this.formatResult(finalResult.matrix, finalResult.basis);
       this.result.sensitivity = this.calculateSensitivity(finalResult.matrix, finalResult.basis);
     } catch (err) {
-      if (err.message !== "Unbounded" && err.message !== "Infeasible") {
+      if (err.message !== "Unbounded" && err.message !== "Infeasible" && err.message !== "MethodIncompatible") {
         console.error(err);
         this.error = "Error durante el cálculo. Revisa tus datos.";
       } else {
-        this.error = err.message === "Unbounded" ? "El problema no tiene fin (No acotado)." : "El problema es infactible.";
+        if (err.message === "Unbounded") this.error = "El problema no tiene fin (No acotado).";
+        else if (err.message === "Infeasible") this.error = "El problema es infactible.";
+        else if (err.message === "MethodIncompatible") this.error = "El método Simplex Estándar solo soporta restricciones <=. Usa el método de la Gran M.";
       }
     }
+  }
+
+  initializeStandardSimplex() {
+    // Check if all constraints are <=
+    if (this.constraints.some(c => c.op !== '<=')) {
+      throw new Error("MethodIncompatible");
+    }
+
+    let slacks = this.constraints.length;
+    const totalVars = this.variablesCount + slacks;
+    const rows = this.constraints.length;
+    const cols = totalVars + 1;
+
+    const matrix = Array.from({ length: rows }, () => Array(cols).fill(0));
+    const basis = [];
+    const cj = new Array(totalVars).fill(new MValue(0, 0));
+    const colNames = [];
+
+    for (let j = 0; j < this.variablesCount; j++) {
+      cj[j] = new MValue(this.objective[j], 0);
+      colNames.push(`X${j + 1}`);
+    }
+
+    let slackIdx = this.variablesCount;
+
+    this.constraints.forEach((c, i) => {
+      c.coeffs.forEach((val, j) => matrix[i][j] = val);
+      matrix[i][cols - 1] = c.constant;
+
+      matrix[i][slackIdx] = 1;
+      cj[slackIdx] = new MValue(0, 0);
+      colNames[slackIdx] = `S${slackIdx - this.variablesCount + 1}`;
+      basis.push(slackIdx);
+      slackIdx++;
+    });
+
+    return { matrix, basis, cj, colNames };
   }
 
   initializeBigM() {

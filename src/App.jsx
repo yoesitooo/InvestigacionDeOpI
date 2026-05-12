@@ -32,6 +32,7 @@ function App() {
   const [varCount, setVarCount] = useState(2);
   const [constCount, setConstCount] = useState(2);
   const [type, setType] = useState('min');
+  const [method, setMethod] = useState('bigm');
   
   const [objective, setObjective] = useState([8, 10]);
   const [constraints, setConstraints] = useState([
@@ -62,11 +63,12 @@ function App() {
       { coeffs: [1, 1], op: '<=', constant: 80 },  
       { coeffs: [1, 3], op: '<=', constant: 150 }  
     ]);
+    setMethod('simplex');
     setStep(2);
   };
 
   const handleSolve = () => {
-    const solver = new SimplexSolver(objective, varCount, constraints, type);
+    const solver = new SimplexSolver(objective, varCount, constraints, type, method);
     solver.solve();
     setSolution({
       result: solver.result,
@@ -159,7 +161,7 @@ function App() {
                   </div>
                   <h3 className="text-xl font-bold">Metodología</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Implementación del método Simplex de la Gran M, utilizando aritmética simbólica para el manejo preciso de penalizaciones por variables artificiales.
+                    Implementación de los métodos Simplex Estándar y de la Gran M, utilizando aritmética simbólica para el manejo preciso de penalizaciones.
                   </p>
                 </div>
                 <div className="glass p-8 rounded-[2.5rem] space-y-4">
@@ -179,12 +181,18 @@ function App() {
                   <Users className="w-8 h-8 text-primary" /> Equipo de Desarrollo
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {[1, 2, 3, 4, 5].map((i) => (
+                  {[
+                    "Edgar Julian Roldan",
+                    "Luis Fernando Lopez",
+                    "Jose David Cucanchon",
+                    "Alex Morales",
+                    "Jhoe Luis Miranda"
+                  ].map((name, i) => (
                     <div key={i} className="glass p-6 rounded-3xl text-center border-white/5 hover:border-primary/30 transition-all group">
                       <div className="w-16 h-16 rounded-full bg-white/5 mx-auto mb-4 flex items-center justify-center border border-white/10 group-hover:bg-primary/10 transition-all">
                         <Users className="w-8 h-8 text-slate-500 group-hover:text-primary transition-all" />
                       </div>
-                      <h4 className="text-sm font-bold text-slate-300">Autor {i}</h4>
+                      <h4 className="text-sm font-bold text-slate-300">{name}</h4>
                       <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Estudiante IO-I</p>
                     </div>
                   ))}
@@ -289,6 +297,40 @@ function App() {
                 </div>
 
                 <div className="space-y-4">
+                  <label className="block text-sm font-medium text-slate-400 uppercase tracking-widest text-center mb-4">Método de Resolución</label>
+                  <div className="grid grid-cols-2 gap-6">
+                    <button
+                      onClick={() => setMethod('simplex')}
+                      className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3 text-center ${
+                        method === 'simplex' 
+                          ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.3)]' 
+                          : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'
+                      }`}
+                    >
+                      <Zap className="w-8 h-8" />
+                      <div className="flex flex-col">
+                        <span className="font-bold text-lg">Simplex Estándar</span>
+                        <span className="text-[10px] opacity-60">Solo restricciones &le;</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setMethod('bigm')}
+                      className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3 text-center ${
+                        method === 'bigm' 
+                          ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.3)]' 
+                          : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'
+                      }`}
+                    >
+                      <BrainCircuit className="w-8 h-8" />
+                      <div className="flex flex-col">
+                        <span className="font-bold text-lg">Gran M</span>
+                        <span className="text-[10px] opacity-60">Cualquier restricción</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
                   <label className="block text-sm font-medium text-slate-400 uppercase tracking-widest text-center mb-4">Meta</label>
                   <div className="grid grid-cols-2 gap-6">
                     <button
@@ -299,7 +341,7 @@ function App() {
                           : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'
                       }`}
                     >
-                      <Plus className="w-8 h-8" />
+                      <TrendingUp className="w-8 h-8" />
                       <span className="font-bold text-lg">Maximizar</span>
                     </button>
                     <button
@@ -310,7 +352,7 @@ function App() {
                           : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'
                       }`}
                     >
-                      <Minus className="w-8 h-8" />
+                      <Scale className="w-8 h-8" />
                       <span className="font-bold text-lg">Minimizar</span>
                     </button>
                   </div>
@@ -473,10 +515,17 @@ function App() {
                         <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                           <CheckCircle2 className="w-48 h-48 text-accent" />
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-black mb-8 flex items-center gap-3">
-                          <CheckCircle2 className="w-8 h-8 text-accent" />
-                          Solución Óptima
-                        </h3>
+                        <div className="flex items-center justify-between mb-8">
+                          <h3 className="text-2xl md:text-3xl font-black flex items-center gap-3">
+                            <CheckCircle2 className="w-8 h-8 text-accent" />
+                            Solución Óptima
+                          </h3>
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                            method === 'simplex' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                          }`}>
+                            {method === 'simplex' ? 'Simplex Estándar' : 'Método Gran M'}
+                          </span>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
                           <div className="p-6 bg-accent/10 rounded-[2rem] border border-accent/20 shadow-xl overflow-hidden">
                             <span className="block text-[10px] font-black text-accent uppercase tracking-widest mb-3 opacity-60">Valor de Z</span>
@@ -657,7 +706,7 @@ function App() {
           </div>
           
           <div className="flex gap-8 text-[10px] font-black text-slate-600 uppercase tracking-widest">
-            <span>Algoritmo Gran M</span>
+            <span>Algoritmos Simplex & Gran M</span>
             <span>Investigación de Operaciones I</span>
             <span>2026</span>
           </div>
