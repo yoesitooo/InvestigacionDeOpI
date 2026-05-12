@@ -73,8 +73,7 @@ function App() {
     setSolution({
       result: solver.result,
       tableaus: solver.tableaus,
-      error: solver.error,
-      dual: solver.getDual()
+      error: solver.error
     });
     setStep(3);
   };
@@ -300,7 +299,10 @@ function App() {
                   <label className="block text-sm font-medium text-slate-400 uppercase tracking-widest text-center mb-4">Método de Resolución</label>
                   <div className="grid grid-cols-2 gap-6">
                     <button
-                      onClick={() => setMethod('simplex')}
+                      onClick={() => {
+                        setMethod('simplex');
+                        setConstraints(constraints.map(c => ({ ...c, op: '<=' })));
+                      }}
                       className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3 text-center ${
                         method === 'simplex' 
                           ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.3)]' 
@@ -451,12 +453,15 @@ function App() {
                         <div className="flex items-center gap-4 ml-auto">
                           <select
                             value={c.op}
+                            disabled={method === 'simplex'}
                             onChange={(e) => {
                               const newConstraints = [...constraints];
                               newConstraints[i].op = e.target.value;
                               setConstraints(newConstraints);
                             }}
-                            className="bg-dark-bg border-2 border-white/10 rounded-xl px-4 py-3 outline-none focus:border-accent cursor-pointer font-black text-2xl text-accent appearance-none text-center min-w-[70px]"
+                            className={`bg-dark-bg border-2 border-white/10 rounded-xl px-4 py-3 outline-none focus:border-accent font-black text-2xl appearance-none text-center min-w-[70px] ${
+                              method === 'simplex' ? 'opacity-50 cursor-not-allowed text-slate-500' : 'cursor-pointer text-accent'
+                            }`}
                           >
                             <option value="<=">&le;</option>
                             <option value=">=">&ge;</option>
@@ -641,52 +646,12 @@ function App() {
 
                     <div className="space-y-8">
                       <div className="glass p-10 rounded-[2.5rem] sticky top-8 border-white/5 shadow-2xl">
-                        <div className="flex items-center gap-3 mb-8">
-                          <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-accent" />
-                          </div>
-                          <h4 className="text-xl font-black">Sensibilidad</h4>
-                        </div>
-                        
-                        <div className="space-y-8">
-                          <div>
-                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Precios Sombra (RHS)</span>
-                            <div className="space-y-3">
-                              {solution.result.sensitivity.shadowPrices.map((sp, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group hover:border-accent/50 transition-all">
-                                  <span className="text-sm font-bold text-slate-400 group-hover:text-white transition-colors">Recurso {i + 1}</span>
-                                  <span className="text-lg font-black text-accent">{sp.value.toFixed(2)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Costos Reducidos (Cj)</span>
-                            <div className="space-y-3">
-                              {solution.result.variables.map((val, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group">
-                                  <span className="text-sm font-bold text-slate-400">Var X{i + 1}</span>
-                                  <span className="text-lg font-black text-primary">0.00</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="pt-6 border-t border-white/10">
-                            <h5 className="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Modelo Dual</h5>
-                            <button className="w-full py-3 bg-primary/20 text-primary border border-primary/30 rounded-xl font-bold text-xs hover:bg-primary/30 transition-all flex items-center justify-center gap-2">
-                              <Layers className="w-4 h-4" /> Ver Dualidad
-                            </button>
-                          </div>
-                        </div>
-
                         <button 
                           onClick={reset}
-                          className="w-full mt-12 py-4 rounded-2xl bg-white/5 border-2 border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-black text-slate-300 active:scale-95"
+                          className="w-full py-6 rounded-3xl bg-primary text-white hover:opacity-90 shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-3 font-black text-xl active:scale-95"
                         >
-                          <RefreshCcw className="w-5 h-5" />
-                          REINICIAR
+                          <RefreshCcw className="w-6 h-6" />
+                          NUEVO CÁLCULO
                         </button>
                       </div>
                     </div>

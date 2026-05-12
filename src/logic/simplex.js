@@ -81,7 +81,6 @@ export class SimplexSolver {
 
       const finalResult = this.runSimplex(matrix, basis);
       this.result = this.formatResult(finalResult.matrix, finalResult.basis);
-      this.result.sensitivity = this.calculateSensitivity(finalResult.matrix, finalResult.basis);
     } catch (err) {
       if (err.message !== "Unbounded" && err.message !== "Infeasible" && err.message !== "MethodIncompatible") {
         console.error(err);
@@ -322,37 +321,6 @@ export class SimplexSolver {
     return {
       variables: values,
       objectiveValue: objectiveValue
-    };
-  }
-
-  calculateSensitivity(matrix, basis) {
-    const { zj, cj_zj } = this.calculateZj(matrix, basis);
-    const shadowPrices = [];
-    const reducedCosts = [];
-
-    this.colNames.forEach((name, j) => {
-      if (name.startsWith('S')) {
-        // Shadow Price is Zj for slack variables
-        shadowPrices.push({ name, value: Math.abs(zj[j].real) });
-      } else if (name.startsWith('X')) {
-        // Reduced Cost is Cj - Zj
-        reducedCosts.push({ name, value: cj_zj[j].real });
-      }
-    });
-
-    return { shadowPrices, reducedCosts };
-  }
-
-  getDual() {
-    // Basic dual construction info
-    return {
-      objective: this.constraints.map(c => c.constant),
-      constraints: this.objective.map((val, i) => ({
-        coeffs: this.constraints.map(c => c.coeffs[i]),
-        op: this.type === 'max' ? '>=' : '<=',
-        constant: val
-      })),
-      type: this.type === 'max' ? 'min' : 'max'
     };
   }
 }
