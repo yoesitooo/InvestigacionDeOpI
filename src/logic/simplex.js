@@ -27,10 +27,10 @@ export class MValue {
   }
 
   isLessThan(other) {
-    if (Math.abs(this.m - other.m) > 1e-9) {
+    if (Math.abs(this.m - other.m) > 1e-10) {
       return this.m < other.m;
     }
-    return this.real < other.real - 1e-9;
+    return this.real < other.real - 1e-10;
   }
 
   isZero() {
@@ -64,8 +64,22 @@ export class SimplexSolver {
     this.cj = []; 
   }
 
+  normalizeConstraints() {
+    this.constraints = this.constraints.map(c => {
+      if (c.constant < 0) {
+        return {
+          coeffs: c.coeffs.map(v => v === 0 ? 0 : -v),
+          op: c.op === '<=' ? '>=' : (c.op === '>=' ? '<=' : '='),
+          constant: -c.constant
+        };
+      }
+      return c;
+    });
+  }
+
   solve() {
     try {
+      this.normalizeConstraints();
       let initialization;
       if (this.method === 'simplex') {
         initialization = this.initializeStandardSimplex();
@@ -199,7 +213,7 @@ export class SimplexSolver {
     const cols = currentMatrix[0].length;
 
     let iterations = 0;
-    const maxIterations = 50;
+    const maxIterations = 100;
 
     while (iterations < maxIterations) {
       const { zj, cj_zj } = this.calculateZj(currentMatrix, currentBasis);

@@ -31,7 +31,7 @@ function App() {
   const [step, setStep] = useState(0); 
   const [varCount, setVarCount] = useState(2);
   const [constCount, setConstCount] = useState(2);
-  const [type, setType] = useState('min');
+  const [type, setType] = useState('max');
   const [method, setMethod] = useState('bigm');
   
   const [objective, setObjective] = useState([8, 10]);
@@ -525,6 +525,12 @@ function App() {
                             <CheckCircle2 className="w-8 h-8 text-accent" />
                             Solución Óptima
                           </h3>
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 ${
+                            type === 'max' ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-accent/10 border-accent/30 text-accent'
+                          }`}>
+                            <Target className="w-3 h-3" />
+                            Meta: {type === 'max' ? 'Maximizar' : 'Minimizar'}
+                          </span>
                           <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                             method === 'simplex' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
                           }`}>
@@ -625,11 +631,11 @@ function App() {
                                         {tableau.zj[tableau.zj.length - 1].toString()}
                                       </td>
                                     </tr>
-                                    <tr className="bg-accent/5 text-accent">
+                                    <tr className="bg-accent/10 text-accent group">
                                       <td colSpan={2}></td>
-                                      <td className="p-4 border border-accent/20 rounded-xl font-black uppercase text-[10px]">Cj-Zj</td>
+                                      <td className="p-4 border border-accent/20 rounded-xl font-black uppercase text-[10px] shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">Cj-Zj</td>
                                       {tableau.cj_zj.map((val, j) => (
-                                        <td key={j} className="p-4 border border-accent/20 rounded-xl font-bold">
+                                        <td key={j} className="p-4 border border-accent/20 rounded-xl font-black text-sm">
                                           {val.toString()}
                                         </td>
                                       ))}
