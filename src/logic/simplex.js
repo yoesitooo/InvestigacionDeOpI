@@ -143,7 +143,8 @@ export class SimplexSolver {
       const finalResult = this.runSimplex(matrix, basis);
       this.result = this.formatResult(finalResult.matrix, finalResult.basis);
     } catch (err) {
-      if (err.message !== "Unbounded" && err.message !== "Infeasible" && err.message !== "MethodIncompatible") {
+      const knownErrors = ["Unbounded", "Infeasible", "ImmediateInfeasible", "MethodIncompatible", "NoConstraints"];
+      if (!knownErrors.includes(err.message)) {
         console.error(err);
         this.error = "Error durante el cálculo. Revisa tus datos.";
       } else {
@@ -290,8 +291,9 @@ export class SimplexSolver {
       let pivotRow = -1;
       let minRatio = Infinity;
       for (let i = 0; i < rows; i++) {
-        if (currentMatrix[i][pivotCol] > 1e-9) {
-          const ratio = currentMatrix[i][cols - 1] / currentMatrix[i][pivotCol];
+        const val = currentMatrix[i][pivotCol];
+        if (val > 1e-10) {
+          const ratio = currentMatrix[i][cols - 1] / val;
           if (ratio < minRatio) {
             minRatio = ratio;
             pivotRow = i;
