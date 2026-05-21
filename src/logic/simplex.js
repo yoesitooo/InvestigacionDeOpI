@@ -415,11 +415,27 @@ export class SimplexSolver {
 
     const { cj_zj } = this.calculateZj(matrix, basis);
     let hasMultipleOptima = false;
+    const rows = matrix.length;
+    
     for (let j = 0; j < cols - 1; j++) {
       if (!basis.includes(j) && !this.colNames[j].startsWith('A')) {
         if (cj_zj[j].isZero()) {
-          hasMultipleOptima = true;
-          break;
+          // Verificar si pivotar realmente nos lleva a un vértice distinto (ratio > 0)
+          let minRatio = Infinity;
+          for (let i = 0; i < rows; i++) {
+            if (matrix[i][j] > 1e-8) {
+              const ratio = matrix[i][cols - 1] / matrix[i][j];
+              if (ratio < minRatio) {
+                minRatio = ratio;
+              }
+            }
+          }
+          // Si minRatio es > 0, significa que nos podemos mover por una arista a otro vértice (múltiples óptimos reales)
+          // Si minRatio === 0, solo estamos cambiando de base en el mismo vértice (espejismo por degeneración)
+          if (minRatio > 1e-8) {
+            hasMultipleOptima = true;
+            break;
+          }
         }
       }
     }
