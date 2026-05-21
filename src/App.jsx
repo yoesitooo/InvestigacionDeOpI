@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { SimplexSolver, MValue } from './logic/simplex';
+import { useState } from 'react';
+import { SimplexSolver } from './logic/simplex';
 import { 
   Plus, 
   Minus, 
@@ -17,13 +17,13 @@ import {
   ArrowRight,
   BookOpen,
   FileText,
-  Lightbulb,
-  Zap,
-  Users,
-  TrendingUp,
   Scale,
   Calculator,
-  Download
+  Activity,
+  Box,
+  Zap,
+  Users,
+  TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -555,6 +555,22 @@ function App() {
                         </div>
                       </div>
 
+                      {solution.result.specialCases && solution.result.specialCases.length > 0 && (
+                        <div className="space-y-4">
+                          {solution.result.specialCases.map((sc, idx) => (
+                            <div key={idx} className="glass p-6 rounded-3xl border-orange-500/30 flex gap-4 items-start bg-orange-500/5">
+                              <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0 border border-orange-500/30">
+                                <AlertCircle className="w-6 h-6 text-orange-400" />
+                              </div>
+                              <div>
+                                <h4 className="text-lg font-bold text-orange-400 mb-1">{sc.title}</h4>
+                                <p className="text-slate-300 text-sm leading-relaxed">{sc.description}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="space-y-10">
                         <div className="flex items-center justify-between px-4">
                           <h3 className="text-2xl font-black flex items-center gap-3">
@@ -658,6 +674,89 @@ function App() {
                           )}
                         </div>
                       </div>
+
+                      {solution.result.sensitivity && (
+                        <div className="space-y-10">
+                          <div className="flex items-center justify-between px-4">
+                            <h3 className="text-2xl font-black flex items-center gap-3">
+                              <Activity className="w-6 h-6 text-accent" />
+                              Análisis de Sensibilidad
+                            </h3>
+                          </div>
+                          
+                          <div className="grid gap-8">
+                            <div className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl">
+                              <h4 className="text-lg font-bold mb-6 flex items-center gap-2 text-primary">
+                                <Target className="w-5 h-5" /> Coeficientes Objetivo (Cj)
+                              </h4>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-separate border-spacing-1">
+                                  <thead>
+                                    <tr className="text-slate-500 text-xs uppercase tracking-widest font-black">
+                                      <th className="p-4 bg-white/5 rounded-xl">Variable</th>
+                                      <th className="p-4 bg-white/5 rounded-xl text-center">Actual</th>
+                                      <th className="p-4 bg-white/5 rounded-xl text-center">Aumento Perm.</th>
+                                      <th className="p-4 bg-white/5 rounded-xl text-center">Disminución Perm.</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {solution.result.sensitivity.objSensitivity.map((s, i) => (
+                                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                                        <td className="p-4 border-b border-white/5 font-bold text-white">{s.variable}</td>
+                                        <td className="p-4 border-b border-white/5 text-center font-mono">{s.current.toFixed(2)}</td>
+                                        <td className="p-4 border-b border-white/5 text-center font-mono text-accent">
+                                          {s.increase === Infinity ? <span className="text-xl">∞</span> : s.increase.toFixed(4)}
+                                        </td>
+                                        <td className="p-4 border-b border-white/5 text-center font-mono text-red-400">
+                                          {s.decrease === Infinity ? <span className="text-xl">∞</span> : s.decrease.toFixed(4)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+
+                            <div className="glass p-8 rounded-[2.5rem] border-white/5 shadow-2xl">
+                              <h4 className="text-lg font-bold mb-6 flex items-center gap-2 text-accent">
+                                <Box className="w-5 h-5" /> Recursos (Restricciones bi)
+                              </h4>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-separate border-spacing-1">
+                                  <thead>
+                                    <tr className="text-slate-500 text-xs uppercase tracking-widest font-black">
+                                      <th className="p-4 bg-white/5 rounded-xl">Restricción</th>
+                                      <th className="p-4 bg-white/5 rounded-xl text-center">Actual</th>
+                                      <th className="p-4 bg-white/5 rounded-xl text-center">Precio Sombra</th>
+                                      <th className="p-4 bg-white/5 rounded-xl text-center">Aumento Perm.</th>
+                                      <th className="p-4 bg-white/5 rounded-xl text-center">Disminución Perm.</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {solution.result.sensitivity.rhsSensitivity.map((s, i) => (
+                                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                                        <td className="p-4 border-b border-white/5 font-bold text-white">{s.constraint}</td>
+                                        <td className="p-4 border-b border-white/5 text-center font-mono">{s.current.toFixed(2)}</td>
+                                        <td className="p-4 border-b border-white/5 text-center">
+                                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${Math.abs(s.shadowPrice) > 1e-8 ? 'bg-primary/20 text-primary' : 'bg-slate-500/20 text-slate-400'}`}>
+                                            {s.shadowPrice.toFixed(4)}
+                                          </span>
+                                        </td>
+                                        <td className="p-4 border-b border-white/5 text-center font-mono text-accent">
+                                          {s.increase === Infinity ? <span className="text-xl">∞</span> : s.increase.toFixed(4)}
+                                        </td>
+                                        <td className="p-4 border-b border-white/5 text-center font-mono text-red-400">
+                                          {s.decrease === Infinity ? <span className="text-xl">∞</span> : s.decrease.toFixed(4)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-8">

@@ -62,6 +62,7 @@ export class SimplexSolver {
     this.error = null;
     this.colNames = [];
     this.cj = []; 
+    this.initialBasisCols = [];
   }
 
   normalizeConstraints() {
@@ -142,6 +143,8 @@ export class SimplexSolver {
 
       const finalResult = this.runSimplex(matrix, basis);
       this.result = this.formatResult(finalResult.matrix, finalResult.basis);
+      this.result.sensitivity = this.calculateSensitivity(finalResult.matrix, finalResult.basis);
+      this.result.specialCases = this.detectSpecialCases(finalResult.matrix, finalResult.basis);
     } catch (err) {
       const knownErrors = ["Unbounded", "Infeasible", "ImmediateInfeasible", "MethodIncompatible", "NoConstraints"];
       if (!knownErrors.includes(err.message)) {
@@ -187,6 +190,7 @@ export class SimplexSolver {
       cj[slackIdx] = new MValue(0, 0);
       colNames[slackIdx] = `S${slackIdx - this.variablesCount + 1}`;
       basis.push(slackIdx);
+      this.initialBasisCols.push(slackIdx);
       slackIdx++;
     });
 
@@ -231,6 +235,7 @@ export class SimplexSolver {
         cj[slackIdx] = new MValue(0, 0);
         colNames[slackIdx] = `S${slackIdx - this.variablesCount + 1}`;
         basis.push(slackIdx);
+        this.initialBasisCols.push(slackIdx);
         slackIdx++;
       } else if (c.op === '>=') {
         matrix[i][surplusIdx] = -1;
@@ -241,6 +246,7 @@ export class SimplexSolver {
         cj[artificialIdx] = new MValue(0, this.type === 'min' ? 1 : -1);
         colNames[artificialIdx] = `A${artificialIdx - (this.variablesCount + slacks + surpluses) + 1}`;
         basis.push(artificialIdx);
+        this.initialBasisCols.push(artificialIdx);
         artificialIdx++;
         surplusIdx++;
       } else if (c.op === '=') {
@@ -248,6 +254,7 @@ export class SimplexSolver {
         cj[artificialIdx] = new MValue(0, this.type === 'min' ? 1 : -1);
         colNames[artificialIdx] = `A${artificialIdx - (this.variablesCount + slacks + surpluses) + 1}`;
         basis.push(artificialIdx);
+        this.initialBasisCols.push(artificialIdx);
         artificialIdx++;
       }
     });
@@ -265,7 +272,7 @@ export class SimplexSolver {
     const maxIterations = 100;
 
     while (iterations < maxIterations) {
-      const { zj, cj_zj } = this.calculateZj(currentMatrix, currentBasis);
+      const { cj_zj } = this.calculateZj(currentMatrix, currentBasis);
       
       let pivotCol = -1;
       if (this.type === 'max') {
@@ -369,7 +376,6 @@ export class SimplexSolver {
   }
 
   formatResult(matrix, basis) {
-    const rows = matrix.length;
     const cols = matrix[0].length;
     const values = Array(this.variablesCount).fill(0);
     
@@ -386,5 +392,130 @@ export class SimplexSolver {
       variables: values,
       objectiveValue: objectiveValue
     };
+  }
+
+  detectSpecialCases(matrix, basis) {
+    const cols = matrix[0].length;
+    const cases = [];
+    
+    let isDegenerate = false;
+    for (let i = 0; i < basis.length; i++) {
+      if (Math.abs(matrix[i][cols - 1]) < 1e-8) {
+        isDegenerate = true;
+        break;
+      }
+    }
+    if (isDegenerate) {
+      cases.push({
+        type: 'degeneracy',
+        title: 'Solución Degenerada',
+        description: 'Una o más variables básicas tienen valor cero. Esto explica por qué pueden aparecer filas con muchos ceros, ya que indica un vértice donde se cruzan más restricciones de las estrictamente necesarias.'
+      });
+    }
+
+    const { cj_zj } = this.calculateZj(matrix, basis);
+    let hasMultipleOptima = false;
+    for (let j = 0; j < cols - 1; j++) {
+      if (!basis.includes(j) && !this.colNames[j].startsWith('A')) {
+        if (cj_zj[j].isZero()) {
+          hasMultipleOptima = true;
+          break;
+        }
+      }
+    }
+    if (hasMultipleOptima) {
+      cases.push({
+        type: 'multiple_optima',
+        title: 'Múltiples Soluciones Óptimas',
+        description: 'Existen variables no básicas con costo reducido cero, lo que significa que hay soluciones alternativas óptimas con el mismo valor de Z.'
+      });
+    }
+    
+    return cases;
+  }
+
+  calculateSensitivity(matrix, basis) {
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+    const { zj, cj_zj } = this.calculateZj(matrix, basis);
+    
+    const objSensitivity = [];
+    for (let j = 0; j < this.variablesCount; j++) {
+      let increase = Infinity;
+      let decrease = Infinity;
+      const basicRowIdx = basis.indexOf(j);
+      
+      if (basicRowIdx !== -1) {
+        for (let k = 0; k < cols - 1; k++) {
+          if (basis.includes(k) || this.colNames[k].startsWith('A')) continue;
+          const a_ij = matrix[basicRowIdx][k];
+          const cj_zj_val = cj_zj[k].real;
+          
+          if (a_ij > 1e-8) {
+            if (this.type === 'max') {
+              const val = -cj_zj_val / a_ij;
+              if (val < decrease) decrease = val;
+            } else {
+              const val = cj_zj_val / a_ij;
+              if (val < increase) increase = val;
+            }
+          } else if (a_ij < -1e-8) {
+            if (this.type === 'max') {
+              const val = cj_zj_val / a_ij;
+              if (val < increase) increase = val;
+            } else {
+              const val = -cj_zj_val / a_ij;
+              if (val < decrease) decrease = val;
+            }
+          }
+        }
+      } else {
+        const cj_zj_val = cj_zj[j].real;
+        if (this.type === 'max') {
+          increase = -cj_zj_val;
+          decrease = Infinity;
+        } else {
+          decrease = cj_zj_val;
+          increase = Infinity;
+        }
+      }
+      
+      objSensitivity.push({
+        variable: this.colNames[j],
+        current: this.objective[j],
+        increase: increase,
+        decrease: decrease
+      });
+    }
+
+    const rhsSensitivity = [];
+    for (let i = 0; i < this.constraints.length; i++) {
+      const b_inv_col = this.initialBasisCols[i];
+      let increase = Infinity;
+      let decrease = Infinity;
+      
+      for (let r = 0; r < rows; r++) {
+        const a_ir = matrix[r][b_inv_col];
+        const rhs_r = matrix[r][cols - 1];
+        
+        if (a_ir > 1e-8) {
+          const val = rhs_r / a_ir;
+          if (val < decrease) decrease = val;
+        } else if (a_ir < -1e-8) {
+          const val = -rhs_r / a_ir;
+          if (val < increase) increase = val;
+        }
+      }
+      
+      rhsSensitivity.push({
+        constraint: `R${i + 1}`,
+        current: this.constraints[i].constant,
+        shadowPrice: zj[b_inv_col].real,
+        increase: increase,
+        decrease: decrease
+      });
+    }
+    
+    return { objSensitivity, rhsSensitivity };
   }
 }
