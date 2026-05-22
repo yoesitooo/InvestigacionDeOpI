@@ -350,11 +350,21 @@ export default function InteractiveSensitivity({ solution, type }) {
         <p className="text-slate-400 text-base">Desliza para seleccionar el tipo de análisis</p>
       </div>
 
-      {/* 3D Carousel */}
+      {/* 3D Carousel — drag/swipe + buttons */}
       <div className="relative w-full max-w-xl mx-auto" style={{ perspective: '1000px' }}>
-        <div className="relative w-full h-40 md:h-44" style={{ transformStyle: 'preserve-3d' }}>
+        <motion.div
+          className="relative w-full h-40 md:h-44 cursor-grab active:cursor-grabbing"
+          style={{ transformStyle: 'preserve-3d' }}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -60) handleNext();
+            else if (info.offset.x > 60) handlePrev();
+          }}
+        >
           {CARDS.map((_, index) => renderCardContent(index))}
-        </div>
+        </motion.div>
 
         {/* Prev / Next buttons */}
         <button
