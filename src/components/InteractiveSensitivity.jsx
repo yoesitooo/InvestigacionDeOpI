@@ -81,6 +81,7 @@ export default function InteractiveSensitivity({ solution, type }) {
           opacity: isActive ? 1 : 0.35,
           rotateY: isActive ? 0 : offset * -28,
           x: isActive ? 0 : offset * 220,
+          z: isActive ? 50 : -50,
           zIndex: isActive ? 10 : 0,
         }}
         transition={{ type: "spring", stiffness: 260, damping: 32 }}
