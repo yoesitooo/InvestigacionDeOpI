@@ -673,9 +673,9 @@ function App() {
                           )}
                         </div>
                       </div>
+                      
+                      <InteractiveSensitivity solution={solution} type={type} />
                     </div>
-
-                    <InteractiveSensitivity solution={solution} type={type} />
 
                     <div className="space-y-8">
                       <div className="glass p-10 rounded-[2.5rem] sticky top-8 border-white/5 shadow-2xl">
